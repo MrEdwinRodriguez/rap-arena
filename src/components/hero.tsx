@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Mic, Trophy, Zap } from "lucide-react"
+import Link from "next/link"
 
 export function Hero() {
   return (
@@ -20,28 +21,25 @@ export function Hero() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
-            <Button
-              size="lg"
-              className="bg-primary hover:bg-primary/90 text-lg px-8 py-6"
-              onClick={() => {
-                const modal = document.querySelector("[data-auth-modal]") as HTMLElement
-                modal?.click()
-              }}
-            >
-              <Mic className="mr-2 h-5 w-5" />
-              Start Recording
-            </Button>
-            <Button
-              variant="outline"
-              size="lg"
-              className="text-lg px-8 py-6 bg-transparent"
-              onClick={() => {
-                const modal = document.querySelector("[data-auth-modal]") as HTMLElement
-                modal?.click()
-              }}
-            >
-              Explore Talent
-            </Button>
+            <Link href="/auth/signup">
+              <Button
+                size="lg"
+                className="bg-primary hover:bg-primary/90 text-lg px-8 py-6"
+              >
+                <Mic className="mr-2 h-5 w-5" />
+                Start Recording
+              </Button>
+            </Link>
+            <Link href="/auth/signup">
+              <Button
+                variant="outline"
+                size="lg"
+                className="text-lg px-8 py-6 bg-transparent"
+              >
+                <Trophy className="mr-2 h-5 w-5" />
+                Join Community
+              </Button>
+            </Link>
           </div>
 
           <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
