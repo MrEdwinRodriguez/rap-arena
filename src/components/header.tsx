@@ -21,11 +21,14 @@ export function Header() {
           </Link>
 
           <nav className="hidden md:flex items-center gap-6">
+            <Link href="/beat-library" className="text-foreground hover:text-primary transition-colors">
+              Beat Library
+            </Link>
+            <Link href="/recording-studio" className="text-foreground hover:text-primary transition-colors">
+              Recording Studio
+            </Link>
             <a href="#discover" className="text-foreground hover:text-primary transition-colors">
               Discover
-            </a>
-            <a href="#challenges" className="text-foreground hover:text-primary transition-colors">
-              Challenges
             </a>
             <a href="#leaderboard" className="text-foreground hover:text-primary transition-colors">
               Leaderboard
