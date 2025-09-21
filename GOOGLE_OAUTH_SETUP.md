@@ -44,3 +44,4 @@ To enable Google OAuth authentication, you need to set up a Google Cloud Project
 - Replace `your-google-client-id` and `your-google-client-secret` with actual values from Google Cloud Console
 - For production, make sure to update `NEXTAUTH_URL` to your actual domain
 - Keep your credentials secure and never commit them to version control 
+- For Prod, update you Authorized redirect URIs
