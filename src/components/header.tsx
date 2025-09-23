@@ -1,15 +1,18 @@
 "use client"
 
 import { useState } from "react"
+import { useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { SearchModal } from "@/components/search-modal"
 import { AuthModal } from "@/components/auth-modal"
+import { UserDropdown } from "@/components/user-dropdown"
 import { Search, User, Mic } from "lucide-react"
 import Link from "next/link"
 
 export function Header() {
   const [isAuthOpen, setIsAuthOpen] = useState(false)
   const [isSearchOpen, setIsSearchOpen] = useState(false)
+  const { data: session, status } = useSession()
 
   return (
     <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
@@ -39,13 +42,30 @@ export function Header() {
             <Button variant="ghost" size="sm" onClick={() => setIsSearchOpen(true)}>
               <Search className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="sm" onClick={() => setIsAuthOpen(true)} data-auth-modal>
-              <User className="h-4 w-4 mr-2" />
-              Sign In
-            </Button>
-            <Button size="sm" className="bg-primary hover:bg-primary/90" onClick={() => setIsAuthOpen(true)}>
-              Get Started
-            </Button>
+            
+            {status === "loading" ? (
+              // Loading state
+              <div className="w-10 h-10 bg-muted animate-pulse rounded-full" />
+            ) : session?.user ? (
+              // Authenticated user
+              <div className="flex items-center gap-3">
+                <span className="hidden sm:inline text-sm text-muted-foreground">
+                  Welcome back, {session.user.name?.split(" ")[0]}!
+                </span>
+                <UserDropdown />
+              </div>
+            ) : (
+              // Not authenticated
+              <>
+                <Button variant="outline" size="sm" onClick={() => setIsAuthOpen(true)} data-auth-modal>
+                  <User className="h-4 w-4 mr-2" />
+                  Sign In
+                </Button>
+                <Button size="sm" className="bg-primary hover:bg-primary/90" onClick={() => setIsAuthOpen(true)}>
+                  Get Started
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </div>
