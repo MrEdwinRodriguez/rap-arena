@@ -51,6 +51,9 @@ model User {
   recordings    Recording[]
   beats         Beat[]
   votes         Vote[]
+  likes         Like[]
+  comments      Comment[]
+  plays         Play[]
 }
 
 model VerificationToken {
@@ -73,13 +76,21 @@ model Recording {
   userId      String
   beatId      String?  // Optional: if recorded over a beat
   votes       Int      @default(0)
-  isPublic    Boolean  @default(true)
+  isPublic    Boolean  @default(false)
+  // Engagement metrics
+  likesCount     Int      @default(0)
+  commentsCount  Int      @default(0)
+  playsCount     Int      @default(0)
+  sharesCount    Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  beat        Beat?    @relation(fields: [beatId], references: [id], onDelete: SetNull)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  beat        Beat?     @relation(fields: [beatId], references: [id], onDelete: SetNull)
   userVotes   Vote[]
+  likes       Like[]
+  comments    Comment[]
+  plays       Play[]
 }
 
 model Beat {
@@ -118,4 +129,40 @@ model Vote {
   recording   Recording @relation(fields: [recordingId], references: [id], onDelete: Cascade)
   
   @@unique([userId, recordingId])
+}
+
+model Like {
+  id          String    @id @default(cuid())
+  userId      String
+  recordingId String
+  createdAt   DateTime  @default(now())
+  
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recording   Recording @relation(fields: [recordingId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, recordingId])
+}
+
+model Comment {
+  id          String    @id @default(cuid())
+  content     String
+  userId      String
+  recordingId String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recording   Recording @relation(fields: [recordingId], references: [id], onDelete: Cascade)
+}
+
+model Play {
+  id          String    @id @default(cuid())
+  userId      String?   // Optional - can track anonymous plays
+  recordingId String
+  duration    Int?      // How long they listened (seconds)
+  completed   Boolean   @default(false) // Did they listen to the end
+  createdAt   DateTime  @default(now())
+  
+  user        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  recording   Recording @relation(fields: [recordingId], references: [id], onDelete: Cascade)
 }
