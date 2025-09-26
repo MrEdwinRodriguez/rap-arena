@@ -1,5 +1,6 @@
 import { Header } from "@/components/header"
 import { RecordingStudio } from "@/components/recording-studio"
+import { UserRecordings } from "@/components/user-recordings"
 import { FreestyleChallenges } from "@/components/freestyle-challenges"
 
 export default function RecordingStudioPage() {
@@ -14,6 +15,7 @@ export default function RecordingStudioPage() {
 
         <div className="space-y-12">
           <RecordingStudio />
+          <UserRecordings />
           <FreestyleChallenges />
         </div>
       </div>

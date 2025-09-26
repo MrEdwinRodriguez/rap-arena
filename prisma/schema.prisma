@@ -40,10 +40,17 @@ model User {
   emailVerified DateTime?
   image         String?
   password      String?
+  username      String?   @unique
+  bio           String?
+  tier          Int       @default(1)
+  totalVotes    Int       @default(0)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   accounts      Account[]
   sessions      Session[]
+  recordings    Recording[]
+  beats         Beat[]
+  votes         Vote[]
 }
 
 model VerificationToken {
@@ -52,4 +59,63 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+model Recording {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  filePath    String   // Supabase storage path
+  fileUrl     String   // Public URL
+  duration    Int?     // Duration in seconds
+  fileSize    Int?     // File size in bytes
+  mimeType    String?  // File MIME type
+  userId      String
+  beatId      String?  // Optional: if recorded over a beat
+  votes       Int      @default(0)
+  isPublic    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  beat        Beat?    @relation(fields: [beatId], references: [id], onDelete: SetNull)
+  userVotes   Vote[]
+}
+
+model Beat {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  filePath    String   // Supabase storage path
+  fileUrl     String   // Public URL
+  genre       String?
+  bpm         Int?
+  key         String?
+  mood        String?
+  tags        String[] // Array of tags
+  duration    Int?     // Duration in seconds
+  fileSize    Int?     // File size in bytes
+  mimeType    String?  // File MIME type
+  userId      String
+  downloads   Int      @default(0)
+  isPublic    Boolean  @default(true)
+  isFree      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recordings  Recording[]
+}
+
+model Vote {
+  id          String    @id @default(cuid())
+  userId      String
+  recordingId String
+  value       Int       // 1 for upvote, -1 for downvote
+  createdAt   DateTime  @default(now())
+  
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recording   Recording @relation(fields: [recordingId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, recordingId])
 }
