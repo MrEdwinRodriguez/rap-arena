@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
-import { User, LogOut, Settings } from "lucide-react"
+import { User, LogOut, Settings, Pencil } from "lucide-react"
 import Link from "next/link"
 
 export function UserDropdown() {
@@ -57,9 +57,15 @@ export function UserDropdown() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link href="/profile" className="cursor-pointer">
+          <Link href={`/profile/${session.user.id}`} className="cursor-pointer">
             <User className="mr-2 h-4 w-4" />
             <span>View Profile</span>
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href={`/edit-profile/${session.user.id}`} className="cursor-pointer">
+            <Pencil className="mr-2 h-4 w-4" />
+            <span>Edit Profile</span>
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>

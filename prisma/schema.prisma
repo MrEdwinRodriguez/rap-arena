@@ -42,6 +42,11 @@ model User {
   password      String?
   username      String?   @unique
   bio           String?
+  birthday      DateTime?
+  city          String?
+  countryId     Int?      // Foreign key to Country
+  stateId       Int?      // Foreign key to State (for US states)
+  stateProvince String?   // For non-US states/provinces
   tier          Int       @default(1)
   totalVotes    Int       @default(0)
   createdAt     DateTime  @default(now())
@@ -55,6 +60,8 @@ model User {
   comments      Comment[]
   commentLikes  CommentLike[]
   plays         Play[]
+  country       Country?  @relation(fields: [countryId], references: [id])
+  state         State?    @relation(fields: [stateId], references: [id])
 }
 
 model VerificationToken {
@@ -183,4 +190,25 @@ model CommentLike {
   comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
   
   @@unique([userId, commentId])
+}
+
+model Country {
+  id    Int    @id
+  name  String @unique
+  code  String @unique // ISO country code (US, CA, etc.)
+  
+  users User[]
+  states State[]
+}
+
+model State {
+  id        Int    @id
+  name      String
+  code      String // State abbreviation (CA, NY, etc.)
+  countryId Int
+  
+  country   Country @relation(fields: [countryId], references: [id])
+  users     User[]
+  
+  @@unique([code, countryId])
 }
