@@ -247,12 +247,24 @@ export function UserProfile({ user, recordings }: UserProfileProps) {
                           </div>
 
                           <div className="flex items-center gap-4 text-sm text-muted-foreground flex-shrink-0">
-                            <RecordingInteractions
-                              recordingId={recording.id}
-                              initialLikesCount={recording.likesCount}
-                              initialCommentsCount={recording.commentsCount}
-                              size="sm"
-                            />
+                                                         <RecordingInteractions
+                               recordingId={recording.id}
+                               initialLikesCount={recording.likesCount}
+                               initialCommentsCount={recording.commentsCount}
+                               size="sm"
+                               recordingInfo={{
+                                 id: recording.id,
+                                 title: recording.title,
+                                 fileUrl: recording.fileUrl,
+                                 user: recording.user,
+                                 duration: recording.duration,
+                                 likesCount: recording.likesCount,
+                                 commentsCount: recording.commentsCount,
+                                 playsCount: recording.playsCount,
+                                 sharesCount: 0, // Add sharesCount when implemented
+                                 beat: recording.beat
+                               }}
+                             />
                             <div className="flex items-center gap-1">
                               <Users className="w-4 h-4" />
                               <span>{recording.playsCount}</span>

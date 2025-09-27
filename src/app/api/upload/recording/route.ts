@@ -22,6 +22,7 @@ export async function POST(request: NextRequest) {
     const title = formData.get('title') as string
     const description = formData.get('description') as string
     const beatId = formData.get('beatId') as string
+    const duration = formData.get('duration') as string
 
     if (!file) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 })
@@ -69,18 +70,19 @@ export async function POST(request: NextRequest) {
 
     const publicUrl = urlData.publicUrl
 
-    // Save recording metadata to database
-    const recording = await prisma.recording.create({
-      data: {
-        title,
-        description,
-        filePath: fileName,
-        fileUrl: publicUrl,
-        fileSize: file.size,
-        mimeType: file.type,
-        userId: session.user.id,
-        beatId: beatId || null,
-      },
+            // Save recording metadata to database
+        const recording = await prisma.recording.create({
+          data: {
+            title,
+            description,
+            filePath: fileName,
+            fileUrl: publicUrl,
+            duration: duration ? parseInt(duration, 10) : null,
+            fileSize: file.size,
+            mimeType: file.type,
+            userId: session.user.id,
+            beatId: beatId || null,
+          },
       include: {
         user: {
           select: {

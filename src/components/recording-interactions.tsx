@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
-import { Heart, MessageCircle, Send } from "lucide-react"
+import { Heart, MessageCircle, Send, Users, Play, Pause } from "lucide-react"
 import { CommentInteractions } from "@/components/comment-interactions"
 
 interface Comment {
@@ -46,12 +46,36 @@ interface Reply {
   }
 }
 
+interface RecordingInfo {
+  id: string
+  title: string
+  fileUrl: string
+  user: {
+    id: string
+    name?: string
+    username?: string
+    image?: string
+    tier: number
+  }
+  duration?: number
+  likesCount: number
+  commentsCount: number
+  playsCount: number
+  sharesCount: number
+  beat?: {
+    id: string
+    title: string
+    genre?: string
+  }
+}
+
 interface RecordingInteractionsProps {
   recordingId: string
   initialLikesCount?: number
   initialCommentsCount?: number
   showCounts?: boolean
   size?: "sm" | "md" | "lg"
+  recordingInfo?: RecordingInfo
 }
 
 export function RecordingInteractions({ 
@@ -59,7 +83,8 @@ export function RecordingInteractions({
   initialLikesCount = 0, 
   initialCommentsCount = 0,
   showCounts = true,
-  size = "md"
+  size = "md",
+  recordingInfo
 }: RecordingInteractionsProps) {
   const { data: session } = useSession()
   const [isLiked, setIsLiked] = useState(false)
@@ -71,6 +96,8 @@ export function RecordingInteractions({
   const [isLoadingComments, setIsLoadingComments] = useState(false)
   const [isSubmittingComment, setIsSubmittingComment] = useState(false)
   const [isTogglingLike, setIsTogglingLike] = useState(false)
+  const [isPlayingRecording, setIsPlayingRecording] = useState(false)
+  const [recordingAudio, setRecordingAudio] = useState<HTMLAudioElement | null>(null)
 
   // Fetch like status and counts when component mounts
   useEffect(() => {
@@ -83,6 +110,24 @@ export function RecordingInteractions({
       fetchComments()
     }
   }, [isCommentsOpen])
+
+  // Cleanup audio when component unmounts or modal closes
+  useEffect(() => {
+    return () => {
+      if (recordingAudio) {
+        recordingAudio.pause()
+        recordingAudio.src = ''
+      }
+    }
+  }, [recordingAudio])
+
+  // Pause audio when modal closes
+  useEffect(() => {
+    if (!isCommentsOpen && recordingAudio) {
+      recordingAudio.pause()
+      setIsPlayingRecording(false)
+    }
+  }, [isCommentsOpen, recordingAudio])
 
   const fetchLikeStatus = async () => {
     try {
@@ -200,6 +245,32 @@ export function RecordingInteractions({
     return colors[tier - 1] || "bg-gray-500"
   }
 
+  const playRecording = () => {
+    if (!recordingInfo?.fileUrl) return
+
+    if (isPlayingRecording && recordingAudio) {
+      // Pause current recording
+      recordingAudio.pause()
+      setIsPlayingRecording(false)
+      return
+    }
+
+    // Create or get audio element for the recording
+    let audio = recordingAudio
+    if (!audio && recordingInfo.fileUrl) {
+      audio = new Audio(recordingInfo.fileUrl)
+      audio.addEventListener('ended', () => setIsPlayingRecording(false))
+      audio.addEventListener('pause', () => setIsPlayingRecording(false))
+      audio.addEventListener('play', () => setIsPlayingRecording(true))
+      setRecordingAudio(audio)
+    }
+
+    if (audio) {
+      audio.play()
+      setIsPlayingRecording(true)
+    }
+  }
+
   const buttonSize = size === "sm" ? "sm" : size === "lg" ? "lg" : "sm"
   const iconSize = size === "sm" ? "h-3 w-3" : size === "lg" ? "h-5 w-5" : "h-4 w-4"
 
@@ -234,6 +305,73 @@ export function RecordingInteractions({
           <DialogHeader>
             <DialogTitle>Comments ({commentsCount})</DialogTitle>
           </DialogHeader>
+          
+          {/* Recording Information */}
+          {recordingInfo && (
+            <div className="border-b pb-4 mb-4">
+              <div className="flex items-start gap-3">
+                <div className="flex flex-col items-center gap-2">
+                  <Avatar className="h-12 w-12 flex-shrink-0">
+                    <AvatarImage src={recordingInfo.user.image || "/placeholder.svg"} alt={recordingInfo.user.name || recordingInfo.user.username} />
+                    <AvatarFallback>
+                      {(recordingInfo.user.name || recordingInfo.user.username || 'U').slice(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={playRecording}
+                    className="w-12 h-8 p-0 rounded-full"
+                    title={isPlayingRecording ? "Pause" : "Play"}
+                  >
+                    {isPlayingRecording ? (
+                      <Pause className="h-3 w-3" />
+                    ) : (
+                      <Play className="h-3 w-3" />
+                    )}
+                  </Button>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-lg truncate">{recordingInfo.title}</h3>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-sm text-muted-foreground">
+                      by {recordingInfo.user.name || recordingInfo.user.username}
+                    </span>
+                    <Badge className={`${getTierColor(recordingInfo.user.tier)} text-white text-xs`}>
+                      T{recordingInfo.user.tier}
+                    </Badge>
+                    {recordingInfo.beat && (
+                      <>
+                        <span className="text-xs text-muted-foreground">•</span>
+                        <Badge variant="outline" className="text-xs">
+                          {recordingInfo.beat.title}
+                        </Badge>
+                      </>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-1">
+                      <Heart className="h-3 w-3" />
+                      <span>{recordingInfo.likesCount}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <MessageCircle className="h-3 w-3" />
+                      <span>{recordingInfo.commentsCount}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Users className="h-3 w-3" />
+                      <span>{recordingInfo.playsCount}</span>
+                    </div>
+                    {recordingInfo.duration && (
+                      <div className="flex items-center gap-1">
+                        <span>{Math.floor(recordingInfo.duration / 60)}:{(recordingInfo.duration % 60).toString().padStart(2, '0')}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
           
           <div className="space-y-4">
             {/* Add Comment */}

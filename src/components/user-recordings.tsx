@@ -26,6 +26,7 @@ interface Recording {
     name?: string
     username?: string
     image?: string
+    tier: number
   }
   beat?: {
     id: string
@@ -286,12 +287,24 @@ export function UserRecordings() {
       {/* Add like and comment interactions for public recordings */}
       {recording.isPublic && (
         <div className="pt-2 border-t">
-          <RecordingInteractions
-            recordingId={recording.id}
-            initialLikesCount={recording.likesCount}
-            initialCommentsCount={recording.commentsCount}
-            size="sm"
-          />
+                     <RecordingInteractions
+             recordingId={recording.id}
+             initialLikesCount={recording.likesCount}
+             initialCommentsCount={recording.commentsCount}
+             size="sm"
+             recordingInfo={{
+               id: recording.id,
+               title: recording.title,
+               fileUrl: recording.fileUrl,
+               user: recording.user,
+               duration: recording.duration,
+               likesCount: recording.likesCount,
+               commentsCount: recording.commentsCount,
+               playsCount: recording.playsCount,
+               sharesCount: 0, // Add sharesCount when implemented
+               beat: recording.beat
+             }}
+           />
         </div>
       )}
     </div>

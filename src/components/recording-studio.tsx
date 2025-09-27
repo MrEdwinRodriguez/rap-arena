@@ -156,6 +156,9 @@ export function RecordingStudio() {
     setIsUploading(true)
 
     try {
+      // Get audio duration
+      const duration = await getAudioDuration(audioBlob)
+      
       const formData = new FormData()
       
       // Create a file from the blob
@@ -166,6 +169,7 @@ export function RecordingStudio() {
       formData.append('file', file)
       formData.append('title', title.trim())
       formData.append('description', description.trim())
+      formData.append('duration', duration.toString())
 
       const response = await fetch('/api/upload/recording', {
         method: 'POST',
@@ -208,6 +212,18 @@ export function RecordingStudio() {
     const mins = Math.floor(seconds / 60)
     const secs = seconds % 60
     return `${mins}:${secs.toString().padStart(2, "0")}`
+  }
+
+  // Helper function to get audio duration
+  const getAudioDuration = (audioBlob: Blob): Promise<number> => {
+    return new Promise((resolve) => {
+      const audio = new Audio()
+      audio.addEventListener('loadedmetadata', () => {
+        resolve(Math.round(audio.duration))
+        URL.revokeObjectURL(audio.src) // Clean up
+      })
+      audio.src = URL.createObjectURL(audioBlob)
+    })
   }
 
   if (!session) {

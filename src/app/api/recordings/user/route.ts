@@ -22,6 +22,7 @@ export async function GET(request: NextRequest) {
             name: true,
             username: true,
             image: true,
+            tier: true,
           }
         },
         beat: {
