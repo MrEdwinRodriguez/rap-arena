@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Play, Pause, Download, Eye, EyeOff, Calendar, Music, Trash2, AlertTriangle } from "lucide-react"
+import { RecordingInteractions } from "@/components/recording-interactions"
 
 interface Recording {
   id: string
@@ -15,6 +16,9 @@ interface Recording {
   fileUrl: string
   duration?: number
   votes: number
+  likesCount: number
+  commentsCount: number
+  playsCount: number
   isPublic: boolean
   createdAt: string
   user: {
@@ -278,6 +282,18 @@ export function UserRecordings() {
           </Badge>
         </div>
       </div>
+      
+      {/* Add like and comment interactions for public recordings */}
+      {recording.isPublic && (
+        <div className="pt-2 border-t">
+          <RecordingInteractions
+            recordingId={recording.id}
+            initialLikesCount={recording.likesCount}
+            initialCommentsCount={recording.commentsCount}
+            size="sm"
+          />
+        </div>
+      )}
     </div>
   )
 

@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Mic, Trophy, Users, Heart, MessageCircle, Play, Pause, Calendar, Music } from "lucide-react"
+import { RecordingInteractions } from "@/components/recording-interactions"
 
 interface Recording {
   id: string
@@ -164,7 +165,7 @@ export function UserProfile({ user, recordings }: UserProfileProps) {
 
             <div className="space-y-1">
               <div className="text-2xl font-bold text-primary">
-                {recordings.reduce((sum, r) => sum + r.likesCount, 0)}
+                {recordings.length > 0 ? recordings.reduce((sum, r) => sum + r.likesCount, 0) : 0}
               </div>
               <div className="text-sm text-muted-foreground flex items-center justify-center gap-1">
                 <Heart className="w-4 h-4" />
@@ -246,14 +247,12 @@ export function UserProfile({ user, recordings }: UserProfileProps) {
                           </div>
 
                           <div className="flex items-center gap-4 text-sm text-muted-foreground flex-shrink-0">
-                            <div className="flex items-center gap-1">
-                              <Heart className="w-4 h-4" />
-                              <span>{recording.likesCount}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <MessageCircle className="w-4 h-4" />
-                              <span>{recording.commentsCount}</span>
-                            </div>
+                            <RecordingInteractions
+                              recordingId={recording.id}
+                              initialLikesCount={recording.likesCount}
+                              initialCommentsCount={recording.commentsCount}
+                              size="sm"
+                            />
                             <div className="flex items-center gap-1">
                               <Users className="w-4 h-4" />
                               <span>{recording.playsCount}</span>

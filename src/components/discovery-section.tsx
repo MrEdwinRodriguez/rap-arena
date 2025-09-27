@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { TrendingUp, Users, Zap, Trophy, ArrowRight, Play, Pause, Music } from "lucide-react"
+import { RecordingInteractions } from "@/components/recording-interactions"
 
 interface TrendingRecording {
   id: string
@@ -188,9 +189,13 @@ export function DiscoverySection() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <div className="text-xs text-muted-foreground">
-                          {recording.recentLikes} ❤️ {recording.recentPlays} 👁️
-                        </div>
+                        <RecordingInteractions
+                          recordingId={recording.id}
+                          initialLikesCount={recording.recentLikes}
+                          initialCommentsCount={recording.recentComments}
+                          size="sm"
+                          showCounts={false}
+                        />
                         <Button
                           variant="ghost"
                           size="sm"

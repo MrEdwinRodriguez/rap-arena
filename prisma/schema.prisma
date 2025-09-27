@@ -53,6 +53,7 @@ model User {
   votes         Vote[]
   likes         Like[]
   comments      Comment[]
+  commentLikes  CommentLike[]
   plays         Play[]
 }
 
@@ -148,11 +149,16 @@ model Comment {
   content     String
   userId      String
   recordingId String
+  parentId    String?   // For nested comments/replies
+  likesCount  Int       @default(0)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   recording   Recording @relation(fields: [recordingId], references: [id], onDelete: Cascade)
+  parent      Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies     Comment[] @relation("CommentReplies")
+  likes       CommentLike[]
 }
 
 model Play {
@@ -165,4 +171,16 @@ model Play {
   
   user        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
   recording   Recording @relation(fields: [recordingId], references: [id], onDelete: Cascade)
+}
+
+model CommentLike {
+  id        String   @id @default(cuid())
+  userId    String
+  commentId String
+  createdAt DateTime @default(now())
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, commentId])
 }
