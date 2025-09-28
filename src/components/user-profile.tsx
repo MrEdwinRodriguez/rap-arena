@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Mic, Trophy, Users, Heart, MessageCircle, Play, Pause, Calendar, Music } from "lucide-react"
 import { RecordingInteractions } from "@/components/recording-interactions"
 import { FollowButton } from "@/components/follow-button"
+import { UserPosts } from "@/components/user-posts"
 
 interface Recording {
   id: string
@@ -267,20 +268,39 @@ export function UserProfile({ user, recordings }: UserProfileProps) {
         </CardContent>
       </Card>
 
-      {/* Public Recordings */}
-      <Card className="max-w-4xl mx-auto">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Music className="h-5 w-5" />
-            Public Recordings ({recordings.length})
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+      {/* Two Column Layout */}
+      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Left Column - Posts */}
+        <div className="space-y-6">
+          <UserPosts 
+            userId={user.id} 
+            user={{
+              id: user.id,
+              name: user.name,
+              username: user.username,
+              image: user.image,
+              tier: user.tier
+            }} 
+          />
+        </div>
+
+        {/* Right Column - Public Recordings */}
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold flex items-center gap-2">
+              <Music className="h-5 w-5" />
+              Public Recordings
+            </h2>
+            <span className="text-sm text-muted-foreground">{recordings.length} recordings</span>
+          </div>
+
           {recordings.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Music className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No public recordings yet.</p>
-            </div>
+            <Card>
+              <CardContent className="text-center py-8">
+                <Music className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p className="text-muted-foreground">No public recordings yet.</p>
+              </CardContent>
+            </Card>
           ) : (
             <div className="space-y-4">
               {recordings.map((recording) => (
@@ -330,24 +350,24 @@ export function UserProfile({ user, recordings }: UserProfileProps) {
                           </div>
 
                           <div className="flex items-center gap-4 text-sm text-muted-foreground flex-shrink-0">
-                                                         <RecordingInteractions
-                               recordingId={recording.id}
-                               initialLikesCount={recording.likesCount}
-                               initialCommentsCount={recording.commentsCount}
-                               size="sm"
-                               recordingInfo={{
-                                 id: recording.id,
-                                 title: recording.title,
-                                 fileUrl: recording.fileUrl,
-                                 user: recording.user,
-                                 duration: recording.duration,
-                                 likesCount: recording.likesCount,
-                                 commentsCount: recording.commentsCount,
-                                 playsCount: recording.playsCount,
-                                 sharesCount: 0, // Add sharesCount when implemented
-                                 beat: recording.beat
-                               }}
-                             />
+                            <RecordingInteractions
+                              recordingId={recording.id}
+                              initialLikesCount={recording.likesCount}
+                              initialCommentsCount={recording.commentsCount}
+                              size="sm"
+                              recordingInfo={{
+                                id: recording.id,
+                                title: recording.title,
+                                fileUrl: recording.fileUrl,
+                                user: recording.user,
+                                duration: recording.duration,
+                                likesCount: recording.likesCount,
+                                commentsCount: recording.commentsCount,
+                                playsCount: recording.playsCount,
+                                sharesCount: 0, // Add sharesCount when implemented
+                                beat: recording.beat
+                              }}
+                            />
                             <div className="flex items-center gap-1">
                               <Users className="w-4 h-4" />
                               <span>{recording.playsCount}</span>
@@ -361,8 +381,8 @@ export function UserProfile({ user, recordings }: UserProfileProps) {
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   )
 }
