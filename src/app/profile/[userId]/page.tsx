@@ -26,6 +26,7 @@ async function getUser(userId: string) {
             cityNickname: true,
             hideLocation: true,
             hideCityNickname: true,
+            hideFullName: true,
             country: {
               select: {
                 name: true,

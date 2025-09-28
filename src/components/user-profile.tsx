@@ -48,6 +48,7 @@ interface UserProfileProps {
     cityNickname?: string
     hideLocation?: boolean
     hideCityNickname?: boolean
+    hideFullName?: boolean
     countryId?: number
     stateId?: number
     stateProvince?: string
@@ -127,7 +128,23 @@ export function UserProfile({ user, recordings }: UserProfileProps) {
     setPlayingId(recording.id)
   }
 
-  const displayName = user.name || user.username || 'Unknown User'
+  // Display logic for name/username
+  const getDisplayName = () => {
+    if (user.hideFullName) {
+      return user.username || 'Unknown User'
+    }
+    return user.name || user.username || 'Unknown User'
+  }
+  
+  const getSecondaryName = () => {
+    if (user.hideFullName || !user.name || !user.username) {
+      return null
+    }
+    return user.username
+  }
+  
+  const displayName = getDisplayName()
+  const secondaryName = getSecondaryName()
 
   return (
     <div className="space-y-8">
@@ -143,7 +160,12 @@ export function UserProfile({ user, recordings }: UserProfileProps) {
             </Avatar>
 
             <div className="space-y-2">
-              <h1 className="text-3xl font-serif font-bold">{displayName}</h1>
+              <div className="text-center">
+                <h1 className="text-3xl font-serif font-bold">{displayName}</h1>
+                {secondaryName && (
+                  <p className="text-lg text-muted-foreground">@{secondaryName}</p>
+                )}
+              </div>
               <Badge className={`${getTierColor(user.tier)} text-white`}>
                 <Trophy className="w-4 h-4 mr-1" />
                 Tier {user.tier} - {getTierName(user.tier)}

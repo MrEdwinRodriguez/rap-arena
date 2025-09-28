@@ -47,6 +47,8 @@ model User {
   cityNickname  String?   // User's nickname for their city/area
   hideLocation  Boolean   @default(false) // Hide city/state from profile
   hideCityNickname Boolean @default(false) // Hide city nickname from profile
+  hideFullName  Boolean   @default(false) // Hide full name from profile
+  isActive      Boolean   @default(true)  // Account active status (for deactivation)
   countryId     Int?      // Foreign key to Country
   stateId       Int?      // Foreign key to State (for US states)
   stateProvince String?   // For non-US states/provinces

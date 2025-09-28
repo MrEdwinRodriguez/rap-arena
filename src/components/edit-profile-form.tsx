@@ -24,8 +24,6 @@ interface User {
   birthday?: string
   city?: string
   cityNickname?: string
-  hideLocation?: boolean
-  hideCityNickname?: boolean
   countryId?: number
   stateId?: number
   stateProvince?: string
@@ -67,9 +65,7 @@ export function EditProfileForm({ user }: EditProfileFormProps) {
   const [stateId, setStateId] = useState<number | undefined>(user.stateId)
   const [stateProvince, setStateProvince] = useState(user.stateProvince || "")
   
-  // Privacy settings
-  const [hideLocation, setHideLocation] = useState(user.hideLocation || false)
-  const [hideCityNickname, setHideCityNickname] = useState(user.hideCityNickname || false)
+
   
   // Data arrays
   const [countries, setCountries] = useState<Country[]>([])
@@ -186,8 +182,6 @@ export function EditProfileForm({ user }: EditProfileFormProps) {
           birthday: birthday || null,
           city: city.trim() || null,
           cityNickname: cityNickname.trim() || null,
-          hideLocation: hideLocation,
-          hideCityNickname: hideCityNickname,
           countryId: countryId,
           stateId: countryId === 1 ? stateId : null, // Only for US
           stateProvince: countryId === 1 ? null : stateProvince.trim() || null
@@ -413,38 +407,7 @@ export function EditProfileForm({ user }: EditProfileFormProps) {
               </div>
             </div>
 
-            {/* Privacy Settings */}
-            <div className="space-y-4">
-              <div className="space-y-3">
-                <h4 className="text-sm font-medium text-foreground">Privacy Settings</h4>
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="hideLocation"
-                      checked={hideLocation}
-                      onChange={(e) => setHideLocation(e.target.checked)}
-                      className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
-                    />
-                    <Label htmlFor="hideLocation" className="text-sm font-normal cursor-pointer">
-                      Do not show location (city and state will be hidden from your profile)
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="hideCityNickname"
-                      checked={hideCityNickname}
-                      onChange={(e) => setHideCityNickname(e.target.checked)}
-                      className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
-                    />
-                    <Label htmlFor="hideCityNickname" className="text-sm font-normal cursor-pointer">
-                      Do not show City/Hood Nickname (nickname will be hidden from your profile)
-                    </Label>
-                  </div>
-                </div>
-              </div>
-            </div>
+
 
 			<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 			<div className="space-y-2">
