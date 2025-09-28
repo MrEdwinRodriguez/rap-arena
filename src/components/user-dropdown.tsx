@@ -1,6 +1,7 @@
 "use client"
 
 import { signOut, useSession } from "next-auth/react"
+import { useUser } from "@/lib/user-context"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   DropdownMenu,
@@ -16,6 +17,7 @@ import Link from "next/link"
 
 export function UserDropdown() {
   const { data: session } = useSession()
+  const { userImage } = useUser()
 
   if (!session?.user) {
     return null
@@ -37,14 +39,14 @@ export function UserDropdown() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-          <Avatar className="h-9 w-9">
-            <AvatarImage src={session.user.image || ""} alt={session.user.name || ""} />
-            <AvatarFallback className="text-sm font-medium">
-              {session.user.name ? getInitials(session.user.name) : "U"}
-            </AvatarFallback>
-          </Avatar>
-        </Button>
+                    <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+              <Avatar className="h-9 w-9">
+                <AvatarImage src={userImage || session.user.image || ""} alt={session.user.name || ""} />
+                <AvatarFallback className="text-sm font-medium">
+                  {session.user.name ? getInitials(session.user.name) : "U"}
+                </AvatarFallback>
+              </Avatar>
+            </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">

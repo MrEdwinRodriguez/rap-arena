@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { AvatarUploader } from "@/components/avatar-uploader"
 import { Badge } from "@/components/ui/badge"
 import { Calendar, Save, Eye, EyeOff, Trophy } from "lucide-react"
 
@@ -66,6 +67,9 @@ export function EditProfileForm({ user }: EditProfileFormProps) {
   const [countries, setCountries] = useState<Country[]>([])
   const [states, setStates] = useState<State[]>([])
   const [loadingStates, setLoadingStates] = useState(false)
+  
+  // Avatar upload
+  const [currentAvatar, setCurrentAvatar] = useState(user.image || "")
   
   // Password fields
   const [currentPassword, setCurrentPassword] = useState("")
@@ -124,6 +128,17 @@ export function EditProfileForm({ user }: EditProfileFormProps) {
     setCountryId(newCountryId)
     setStateId(undefined)
     setStateProvince("")
+  }
+
+  const handleAvatarUploadSuccess = (avatarUrl: string) => {
+    setCurrentAvatar(avatarUrl)
+    setProfileMessage("Avatar updated successfully!")
+    setTimeout(() => setProfileMessage(""), 3000)
+  }
+
+  const handleAvatarUploadError = (error: string) => {
+    setProfileMessage(`Avatar upload failed: ${error}`)
+    setTimeout(() => setProfileMessage(""), 5000)
   }
 
   const getTierName = (tier: number) => {
@@ -246,7 +261,7 @@ export function EditProfileForm({ user }: EditProfileFormProps) {
         <CardContent>
           <div className="flex items-start gap-6 mb-6">
             <Avatar className="w-20 h-20">
-              <AvatarImage src={user.image || "/placeholder.svg"} alt={user.name || user.username} />
+              <AvatarImage src={currentAvatar || "/placeholder.svg"} alt={user.name || user.username} />
               <AvatarFallback className="text-xl">
                 {(user.name || user.username || 'U').slice(0, 2).toUpperCase()}
               </AvatarFallback>
@@ -264,6 +279,21 @@ export function EditProfileForm({ user }: EditProfileFormProps) {
               </p>
             </div>
           </div>
+
+          <Separator />
+
+          {/* Avatar Upload Section */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium">Profile Picture</h3>
+            <AvatarUploader
+              currentImage={currentAvatar}
+              userName={user.name}
+              onUploadSuccess={handleAvatarUploadSuccess}
+              onUploadError={handleAvatarUploadError}
+            />
+          </div>
+
+          <Separator />
 
           <form onSubmit={handleProfileSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
