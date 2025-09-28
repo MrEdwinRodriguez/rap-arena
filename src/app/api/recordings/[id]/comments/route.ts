@@ -6,10 +6,10 @@ import { prisma } from '@/lib/prisma'
 // GET /api/recordings/[id]/comments - Get all comments for a recording
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const recordingId = params.id
+    const { id: recordingId } = await params
 
     // Check if recording exists
     const recording = await prisma.recording.findUnique({
@@ -83,7 +83,7 @@ export async function GET(
 // POST /api/recordings/[id]/comments - Add a new comment
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -92,7 +92,7 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const recordingId = params.id
+    const { id: recordingId } = await params
     const { content } = await request.json()
 
     if (!content || content.trim().length === 0) {

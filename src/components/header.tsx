@@ -30,9 +30,9 @@ export function Header() {
             <Link href="/recording-studio" className="text-foreground hover:text-primary transition-colors">
               Recording Studio
             </Link>
-            <a href="#discover" className="text-foreground hover:text-primary transition-colors">
-              Discover
-            </a>
+                            <Link href="/discover" className="text-foreground hover:text-primary transition-colors">
+                  Discover
+                </Link>
             <a href="#leaderboard" className="text-foreground hover:text-primary transition-colors">
               Leaderboard
             </a>

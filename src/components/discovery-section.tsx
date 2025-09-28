@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { TrendingUp, Users, Zap, Trophy, ArrowRight, Play, Pause, Music } from "lucide-react"
 import { RecordingInteractions } from "@/components/recording-interactions"
+import Link from "next/link"
 
 interface TrendingRecording {
   id: string
@@ -128,14 +129,8 @@ export function DiscoverySection() {
   }
 
   return (
-    <section className="py-16 px-4 bg-muted/20">
-      <div className="container mx-auto max-w-6xl">
-        <div className="text-center mb-12">
-          <h2 className="text-4xl font-serif font-bold mb-4">Discover New Talent</h2>
-          <p className="text-xl text-muted-foreground">Find the next big stars before they blow up</p>
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-8">
+    <div className="max-w-6xl mx-auto">
+      <div className="grid md:grid-cols-2 gap-8">
           {/* Trending This Week */}
           <Card>
             <CardHeader>
@@ -215,9 +210,11 @@ export function DiscoverySection() {
                       </div>
                     </div>
                   ))}
-                  <Button variant="outline" className="w-full bg-transparent">
-                    <ArrowRight className="h-4 w-4 mr-2" />
-                    View Full Trending List
+                  <Button variant="outline" className="w-full bg-transparent" asChild>
+                    <Link href="/trending">
+                      <ArrowRight className="h-4 w-4 mr-2" />
+                      View Full Trending List
+                    </Link>
                   </Button>
                 </>
               )}
@@ -257,14 +254,15 @@ export function DiscoverySection() {
                   <Trophy className="h-4 w-4 text-muted-foreground" />
                 </div>
               ))}
-              <Button variant="outline" className="w-full bg-transparent">
-                <Users className="h-4 w-4 mr-2" />
-                Discover More Artists
+              <Button variant="outline" className="w-full bg-transparent" asChild>
+                <Link href="/artists">
+                  <Users className="h-4 w-4 mr-2" />
+                  Discover More Artists
+                </Link>
               </Button>
             </CardContent>
           </Card>
-        </div>
       </div>
-    </section>
+    </div>
   )
 }

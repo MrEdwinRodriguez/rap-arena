@@ -44,7 +44,9 @@ async function getUser(userId: string) {
               select: {
                 recordings: {
                   where: { isPublic: true }
-                }
+                },
+                followers: true,
+                following: true
               }
             }
           }
@@ -83,10 +85,14 @@ async function getUser(userId: string) {
       }
     })
 
-    return {
-      user,
-      recordings: publicRecordings
-    }
+            return {
+          user: {
+            ...user,
+            followersCount: user._count.followers,
+            followingCount: user._count.following
+          },
+          recordings: publicRecordings
+        }
   } catch (error) {
     console.error('Error fetching user profile:', error)
     return null

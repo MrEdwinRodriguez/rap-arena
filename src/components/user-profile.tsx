@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Mic, Trophy, Users, Heart, MessageCircle, Play, Pause, Calendar, Music } from "lucide-react"
 import { RecordingInteractions } from "@/components/recording-interactions"
+import { FollowButton } from "@/components/follow-button"
 
 interface Recording {
   id: string
@@ -57,6 +58,8 @@ interface UserProfileProps {
     _count: {
       recordings: number
     }
+    followersCount?: number
+    followingCount?: number
   }
   recordings: Recording[]
 }
@@ -64,6 +67,8 @@ interface UserProfileProps {
 export function UserProfile({ user, recordings }: UserProfileProps) {
   const [playingId, setPlayingId] = useState<string | null>(null)
   const [audioElements, setAudioElements] = useState<{ [key: string]: HTMLAudioElement }>({})
+  const [followersCount, setFollowersCount] = useState(user.followersCount || 0)
+  const [followingCount, setFollowingCount] = useState(user.followingCount || 0)
 
   const getTierName = (tier: number) => {
     const tiers = ["Rookie", "Rising", "Skilled", "Elite", "Legend"]
@@ -146,6 +151,10 @@ export function UserProfile({ user, recordings }: UserProfileProps) {
   const displayName = getDisplayName()
   const secondaryName = getSecondaryName()
 
+  const handleFollowChange = (isFollowing: boolean, newFollowersCount: number) => {
+    setFollowersCount(newFollowersCount)
+  }
+
   return (
     <div className="space-y-8">
       {/* User Profile Header */}
@@ -191,16 +200,41 @@ export function UserProfile({ user, recordings }: UserProfileProps) {
                 </div>
               )}
             </div>
+            
+            {/* Follow Button */}
+            <div className="pt-4">
+              <FollowButton 
+                userId={user.id}
+                onFollowChange={handleFollowChange}
+                size="lg"
+              />
+            </div>
           </div>
         </CardHeader>
 
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 text-center">
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-6 text-center">
             <div className="space-y-1">
               <div className="text-2xl font-bold text-primary">{user._count.recordings}</div>
               <div className="text-sm text-muted-foreground flex items-center justify-center gap-1">
                 <Mic className="w-4 h-4" />
-                Public Recordings
+                Recordings
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <div className="text-2xl font-bold text-primary">{followersCount}</div>
+              <div className="text-sm text-muted-foreground flex items-center justify-center gap-1">
+                <Users className="w-4 h-4" />
+                Followers
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <div className="text-2xl font-bold text-primary">{followingCount}</div>
+              <div className="text-sm text-muted-foreground flex items-center justify-center gap-1">
+                <Users className="w-4 h-4" />
+                Following
               </div>
             </div>
 
@@ -208,7 +242,7 @@ export function UserProfile({ user, recordings }: UserProfileProps) {
               <div className="text-2xl font-bold text-primary">{user.totalVotes}</div>
               <div className="text-sm text-muted-foreground flex items-center justify-center gap-1">
                 <Trophy className="w-4 h-4" />
-                Total Votes
+                Votes
               </div>
             </div>
 
@@ -218,7 +252,7 @@ export function UserProfile({ user, recordings }: UserProfileProps) {
               </div>
               <div className="text-sm text-muted-foreground flex items-center justify-center gap-1">
                 <Heart className="w-4 h-4" />
-                Total Likes
+                Likes
               </div>
             </div>
 

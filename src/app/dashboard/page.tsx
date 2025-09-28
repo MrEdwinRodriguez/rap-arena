@@ -1,6 +1,5 @@
 import { Header } from "@/components/header"
 import { SocialFeed } from "@/components/social-feed"
-import { DiscoverySection } from "@/components/discovery-section"
 import { Button } from "@/components/ui/button"
 import { Mic } from "lucide-react"
 import Link from "next/link"
@@ -24,7 +23,6 @@ export default function DashboardPage() {
         </div>
 
         <div className="space-y-12">
-          <DiscoverySection />
           <SocialFeed />
         </div>
       </div>

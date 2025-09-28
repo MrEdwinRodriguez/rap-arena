@@ -5,10 +5,11 @@ import { prisma } from '@/lib/prisma'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    console.log('Comment like API called for comment:', params.id)
+    const { id: commentId } = await params
+    console.log('Comment like API called for comment:', commentId)
     
     const session = await getServerSession(authOptions)
     console.log('Session user:', session?.user?.id)
@@ -17,8 +18,6 @@ export async function POST(
       console.log('No valid session found')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-
-    const commentId = params.id
     console.log('Comment ID:', commentId)
 
     // Check if comment exists

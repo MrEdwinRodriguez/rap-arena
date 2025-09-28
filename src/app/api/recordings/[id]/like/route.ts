@@ -5,10 +5,11 @@ import { prisma } from '@/lib/prisma'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    console.log('Like API called for recording:', params.id)
+    const { id: recordingId } = await params
+    console.log('Like API called for recording:', recordingId)
     
     const session = await getServerSession(authOptions)
     console.log('Session user:', session?.user?.id)
@@ -17,8 +18,6 @@ export async function POST(
       console.log('No valid session found')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-
-    const recordingId = params.id
     console.log('Recording ID:', recordingId)
 
     // Check if recording exists

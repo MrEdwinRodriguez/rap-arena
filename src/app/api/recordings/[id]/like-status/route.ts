@@ -5,11 +5,11 @@ import { prisma } from '@/lib/prisma'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
-    const recordingId = params.id
+    const { id: recordingId } = await params
 
     // Check if recording exists
     const recording = await prisma.recording.findUnique({

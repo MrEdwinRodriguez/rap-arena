@@ -67,6 +67,10 @@ model User {
   plays         Play[]
   country       Country?  @relation(fields: [countryId], references: [id])
   state         State?    @relation(fields: [stateId], references: [id])
+  
+  // Follow relationships
+  following     Follow[]  @relation("UserFollowing")
+  followers     Follow[]  @relation("UserFollowers")
 }
 
 model VerificationToken {
@@ -216,4 +220,18 @@ model State {
   users     User[]
   
   @@unique([code, countryId])
+}
+
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String   // The user who is following
+  followingId String   // The user being followed
+  createdAt   DateTime @default(now())
+  
+  follower    User     @relation("UserFollowing", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User     @relation("UserFollowers", fields: [followingId], references: [id], onDelete: Cascade)
+  
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
 }

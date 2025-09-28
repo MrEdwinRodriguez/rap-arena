@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Card, CardContent } from "@/components/ui/card"
 import { Search, Users, Music, Filter, Trophy, Play, Clock } from "lucide-react"
 import Link from "next/link"
+import { FollowButton } from "@/components/follow-button"
 
 interface SearchModalProps {
   isOpen: boolean
@@ -357,36 +358,39 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
                   </div>
                 ) : (
                   searchUsers.map((user) => (
-                    <Link key={user.id} href={`/profile/${user.id}`} onClick={handleCardClick}>
-                      <Card className="cursor-pointer hover:bg-muted/50 transition-colors">
-                        <CardContent className="p-4">
-                          <div className="flex items-center gap-3">
-                            <Avatar className="h-12 w-12">
-                              <AvatarImage src={user.image || "/placeholder.svg"} alt={user.name || user.username} />
-                              <AvatarFallback>
-                                {(user.name || user.username || 'U').slice(0, 2).toUpperCase()}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <h4 className="font-semibold">{user.name || user.username}</h4>
-                                <Badge className={`${getTierColor(user.tier)} text-white text-xs`}>
-                                  <Trophy className="w-3 h-3 mr-1" />T{user.tier} {getTierName(user.tier)}
-                                </Badge>
-                              </div>
-                              <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                                <span>{user.totalVotes} votes</span>
-                                <span>{user.publicRecordings} recordings</span>
-                                <span>Joined {formatTimeAgo(user.joinedAt)}</span>
-                              </div>
-                              {user.bio && (
-                                <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{user.bio}</p>
-                              )}
+                    <Card key={user.id} className="hover:bg-muted/50 transition-colors">
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-12 w-12">
+                            <AvatarImage src={user.image || "/placeholder.svg"} alt={user.name || user.username} />
+                            <AvatarFallback>
+                              {(user.name || user.username || 'U').slice(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <Link href={`/profile/${user.id}`} onClick={handleCardClick}>
+                                <h4 className="font-semibold hover:text-primary cursor-pointer">{user.name || user.username}</h4>
+                              </Link>
+                              <Badge className={`${getTierColor(user.tier)} text-white text-xs`}>
+                                <Trophy className="w-3 h-3 mr-1" />T{user.tier} {getTierName(user.tier)}
+                              </Badge>
                             </div>
+                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                              <span>{user.totalVotes} votes</span>
+                              <span>{user.publicRecordings} recordings</span>
+                              <span>Joined {formatTimeAgo(user.joinedAt)}</span>
+                            </div>
+                            {user.bio && (
+                              <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{user.bio}</p>
+                            )}
                           </div>
-                        </CardContent>
-                      </Card>
-                    </Link>
+                          <div className="flex-shrink-0">
+                            <FollowButton userId={user.id} size="sm" />
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
                   ))
                 )}
               </TabsContent>
