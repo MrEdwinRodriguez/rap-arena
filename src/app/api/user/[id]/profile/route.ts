@@ -21,7 +21,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-            const { name, username, bio, birthday, city, countryId, stateId, stateProvince } = await request.json()
+            const { name, username, bio, birthday, city, cityNickname, hideLocation, hideCityNickname, countryId, stateId, stateProvince } = await request.json()
 
     // Validate username uniqueness if provided
     if (username) {
@@ -48,6 +48,9 @@ export async function PATCH(
             bio: bio?.trim() || null,
             birthday: birthday ? new Date(birthday) : null,
             city: city?.trim() || null,
+            cityNickname: cityNickname?.trim() || null,
+            hideLocation: hideLocation ?? false,
+            hideCityNickname: hideCityNickname ?? false,
             countryId: countryId || null,
             stateId: stateId || null,
             stateProvince: stateProvince?.trim() || null,
@@ -61,6 +64,9 @@ export async function PATCH(
             bio: true,
             birthday: true,
             city: true,
+            cityNickname: true,
+            hideLocation: true,
+            hideCityNickname: true,
             countryId: true,
             stateId: true,
             stateProvince: true,

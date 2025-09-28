@@ -44,6 +44,9 @@ model User {
   bio           String?
   birthday      DateTime?
   city          String?
+  cityNickname  String?   // User's nickname for their city/area
+  hideLocation  Boolean   @default(false) // Hide city/state from profile
+  hideCityNickname Boolean @default(false) // Hide city nickname from profile
   countryId     Int?      // Foreign key to Country
   stateId       Int?      // Foreign key to State (for US states)
   stateProvince String?   // For non-US states/provinces

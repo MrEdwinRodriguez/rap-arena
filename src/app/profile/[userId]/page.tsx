@@ -11,26 +11,43 @@ interface ProfilePageProps {
 
 async function getUser(userId: string) {
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        name: true,
-        username: true,
-        image: true,
-        tier: true,
-        bio: true,
-        totalVotes: true,
-        createdAt: true,
-        _count: {
+            const user = await prisma.user.findUnique({
+          where: { id: userId },
           select: {
-            recordings: {
-              where: { isPublic: true }
+            id: true,
+            name: true,
+            username: true,
+            image: true,
+            tier: true,
+            bio: true,
+            totalVotes: true,
+            createdAt: true,
+            city: true,
+            cityNickname: true,
+            hideLocation: true,
+            hideCityNickname: true,
+            country: {
+              select: {
+                name: true,
+                code: true
+              }
+            },
+            state: {
+              select: {
+                name: true,
+                code: true
+              }
+            },
+            stateProvince: true,
+            _count: {
+              select: {
+                recordings: {
+                  where: { isPublic: true }
+                }
+              }
             }
           }
-        }
-      }
-    })
+        })
 
     if (!user) {
       return null

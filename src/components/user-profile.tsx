@@ -44,6 +44,15 @@ interface UserProfileProps {
     bio?: string
     totalVotes: number
     createdAt: string
+    city?: string
+    cityNickname?: string
+    hideLocation?: boolean
+    hideCityNickname?: boolean
+    countryId?: number
+    stateId?: number
+    stateProvince?: string
+    country?: { name: string; code: string }
+    state?: { name: string; code: string }
     _count: {
       recordings: number
     }
@@ -142,6 +151,24 @@ export function UserProfile({ user, recordings }: UserProfileProps) {
             </div>
 
             {user.bio && <p className="text-muted-foreground max-w-md">{user.bio}</p>}
+            
+            {/* Location Information */}
+            <div className="text-sm text-muted-foreground space-y-1">
+              {!user.hideLocation && (user.city || user.state || user.country) && (
+                <div className="flex items-center justify-center gap-1">
+                  {[
+                    user.city,
+                    user.state?.name || user.stateProvince,
+                    user.country?.name
+                  ].filter(Boolean).join(', ')}
+                </div>
+              )}
+              {!user.hideCityNickname && user.cityNickname && (
+                <div className="flex items-center justify-center gap-1">
+                  "{user.cityNickname}"
+                </div>
+              )}
+            </div>
           </div>
         </CardHeader>
 

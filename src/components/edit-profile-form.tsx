@@ -23,6 +23,9 @@ interface User {
   bio?: string
   birthday?: string
   city?: string
+  cityNickname?: string
+  hideLocation?: boolean
+  hideCityNickname?: boolean
   countryId?: number
   stateId?: number
   stateProvince?: string
@@ -59,9 +62,14 @@ export function EditProfileForm({ user }: EditProfileFormProps) {
     user.birthday ? new Date(user.birthday).toISOString().split('T')[0] : ""
   )
   const [city, setCity] = useState(user.city || "")
+  const [cityNickname, setCityNickname] = useState(user.cityNickname || "")
   const [countryId, setCountryId] = useState<number>(user.countryId || 1) // Default to US
   const [stateId, setStateId] = useState<number | undefined>(user.stateId)
   const [stateProvince, setStateProvince] = useState(user.stateProvince || "")
+  
+  // Privacy settings
+  const [hideLocation, setHideLocation] = useState(user.hideLocation || false)
+  const [hideCityNickname, setHideCityNickname] = useState(user.hideCityNickname || false)
   
   // Data arrays
   const [countries, setCountries] = useState<Country[]>([])
@@ -177,6 +185,9 @@ export function EditProfileForm({ user }: EditProfileFormProps) {
           bio: bio.trim() || null,
           birthday: birthday || null,
           city: city.trim() || null,
+          cityNickname: cityNickname.trim() || null,
+          hideLocation: hideLocation,
+          hideCityNickname: hideCityNickname,
           countryId: countryId,
           stateId: countryId === 1 ? stateId : null, // Only for US
           stateProvince: countryId === 1 ? null : stateProvince.trim() || null
@@ -332,30 +343,7 @@ export function EditProfileForm({ user }: EditProfileFormProps) {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="birthday">Birthday</Label>
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="birthday"
-                    type="date"
-                    value={birthday}
-                    onChange={(e) => setBirthday(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="city">City</Label>
-                <Input
-                  id="city"
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                  placeholder="Your city"
-                />
-              </div>
-              
+  
               <div className="space-y-2">
                 <Label htmlFor="country">Country</Label>
                 <Select value={countryId.toString()} onValueChange={handleCountryChange}>
@@ -405,8 +393,74 @@ export function EditProfileForm({ user }: EditProfileFormProps) {
                   />
                 )}
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="city">City</Label>
+                <Input
+                  id="city"
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  placeholder="Your city"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="cityNickname">City/Hood Nickname</Label>
+                <Input
+                  id="cityNickname"
+                  value={cityNickname}
+                  onChange={(e) => setCityNickname(e.target.value)}
+                  placeholder="i.e. 'The Bronx' or 'Duuuval'"
+                />
+              </div>
             </div>
 
+            {/* Privacy Settings */}
+            <div className="space-y-4">
+              <div className="space-y-3">
+                <h4 className="text-sm font-medium text-foreground">Privacy Settings</h4>
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="hideLocation"
+                      checked={hideLocation}
+                      onChange={(e) => setHideLocation(e.target.checked)}
+                      className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                    />
+                    <Label htmlFor="hideLocation" className="text-sm font-normal cursor-pointer">
+                      Do not show location (city and state will be hidden from your profile)
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="hideCityNickname"
+                      checked={hideCityNickname}
+                      onChange={(e) => setHideCityNickname(e.target.checked)}
+                      className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                    />
+                    <Label htmlFor="hideCityNickname" className="text-sm font-normal cursor-pointer">
+                      Do not show City/Hood Nickname (nickname will be hidden from your profile)
+                    </Label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+			<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+			<div className="space-y-2">
+                <Label htmlFor="birthday">Birthday</Label>
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="birthday"
+                    type="date"
+                    value={birthday}
+                    onChange={(e) => setBirthday(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+			</div>
             {profileMessage && (
               <div className={`p-3 rounded-md text-sm ${
                 profileMessage.includes('successfully') 
