@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import { MessageSquare, Heart, Share2, MoreHorizontal, Clock, Image, Smile, Send } from "lucide-react"
+import { PostInteractions } from "@/components/post-interactions"
 
 interface Post {
   id: string
@@ -290,25 +291,23 @@ export function UserPosts({ userId, user, isOwnProfile = false }: UserPostsProps
                   )}
                 </div>
 
-                {/* Post Actions */}
-                <div className="flex items-center justify-between pt-2 border-t">
-                  <div className="flex items-center gap-4">
-                    <Button variant="ghost" size="sm" className="h-8 px-2 text-muted-foreground hover:text-red-500">
-                      <Heart className="w-4 h-4 mr-1" />
-                      <span className="text-xs">{post.likesCount}</span>
-                    </Button>
-                    
-                    <Button variant="ghost" size="sm" className="h-8 px-2 text-muted-foreground hover:text-blue-500">
-                      <MessageSquare className="w-4 h-4 mr-1" />
-                      <span className="text-xs">{post.commentsCount}</span>
-                    </Button>
-                    
-                    <Button variant="ghost" size="sm" className="h-8 px-2 text-muted-foreground hover:text-green-500">
-                      <Share2 className="w-4 h-4 mr-1" />
-                      <span className="text-xs">{post.sharesCount}</span>
-                    </Button>
-                  </div>
-                </div>
+                                 {/* Post Actions */}
+                 <div className="pt-2 border-t">
+                   <PostInteractions
+                     postId={post.id}
+                     initialLikesCount={post.likesCount}
+                     initialCommentsCount={post.commentsCount}
+                     size="sm"
+                     postInfo={{
+                       id: post.id,
+                       content: post.content,
+                       user: post.user,
+                       createdAt: post.createdAt,
+                       type: post.type,
+                       recording: post.recording
+                     }}
+                   />
+                 </div>
               </CardContent>
             </Card>
           ))}
