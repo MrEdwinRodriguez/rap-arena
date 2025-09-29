@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useSession } from "next-auth/react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -66,10 +67,13 @@ interface UserProfileProps {
 }
 
 export function UserProfile({ user, recordings }: UserProfileProps) {
+  const { data: session } = useSession()
   const [playingId, setPlayingId] = useState<string | null>(null)
   const [audioElements, setAudioElements] = useState<{ [key: string]: HTMLAudioElement }>({})
   const [followersCount, setFollowersCount] = useState(user.followersCount || 0)
   const [followingCount, setFollowingCount] = useState(user.followingCount || 0)
+  
+  const isOwnProfile = session?.user?.id === user.id
 
   const getTierName = (tier: number) => {
     const tiers = ["Rookie", "Rising", "Skilled", "Elite", "Legend"]
@@ -82,10 +86,11 @@ export function UserProfile({ user, recordings }: UserProfileProps) {
   }
 
   const formatDate = (dateString: string) => {
+    console.log(dateString)
     const date = new Date(dateString)
     return date.toLocaleDateString('en-US', {
       year: 'numeric',
-      month: 'long',
+      month: 'numeric',
       day: 'numeric'
     })
   }
@@ -280,7 +285,8 @@ export function UserProfile({ user, recordings }: UserProfileProps) {
               username: user.username,
               image: user.image,
               tier: user.tier
-            }} 
+            }}
+            isOwnProfile={isOwnProfile}
           />
         </div>
 
