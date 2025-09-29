@@ -310,7 +310,7 @@ export function UserProfile({ user, recordings }: UserProfileProps) {
           ) : (
             <div className="space-y-4">
               {recordings.map((recording) => (
-                <Card key={recording.id} className="hover:shadow-md transition-shadow">
+                <Card key={recording.id} className="hover:shadow-md transition-shadow profile-recording">
                   <CardContent className="p-4">
                     <div className="flex items-start gap-4">
                       <Button

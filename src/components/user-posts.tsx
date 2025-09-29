@@ -147,6 +147,10 @@ export function UserPosts({ userId, user, isOwnProfile = false }: UserPostsProps
 
    return (
     <div className="space-y-4">
+		<div className="flex items-center justify-between">
+			<h2 className="text-xl font-semibold">Posts</h2>
+			<span className="text-sm text-muted-foreground">{posts.length} posts</span>
+		</div>
       {/* Post Creation - only show if user is viewing their own profile or is logged in as the profile owner */}
       {(isOwnProfile || session?.user?.id === userId) && (
         <Card>
@@ -159,7 +163,7 @@ export function UserPosts({ userId, user, isOwnProfile = false }: UserPostsProps
                 </AvatarFallback>
               </Avatar>
               
-              <div className="flex-1">
+              <div id='post-input' className="flex-1">
                 {!showPostInput ? (
                   <Button
                     variant="outline"
@@ -224,11 +228,6 @@ export function UserPosts({ userId, user, isOwnProfile = false }: UserPostsProps
         </Card>
       )}
 
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">Posts</h2>
-        <span className="text-sm text-muted-foreground">{posts.length} posts</span>
-      </div>
-
       {loading ? (
         <div className="flex items-center justify-center py-8">
           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
@@ -243,7 +242,7 @@ export function UserPosts({ userId, user, isOwnProfile = false }: UserPostsProps
       ) : (
         <div className="space-y-4">
           {posts.map((post) => (
-            <Card key={post.id} className="hover:shadow-md transition-shadow">
+            <Card key={post.id} className="hover:shadow-md transition-shadow profile-post">
               <CardContent className="p-4">
                 {/* Post Header */}
                                  <div className="flex items-start gap-3 mb-3">
