@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { createFollowNotification } from '@/lib/notifications'
 
 export async function POST(
   request: NextRequest,
@@ -50,18 +51,21 @@ export async function POST(
       return NextResponse.json({ error: 'Already following this user' }, { status: 400 })
     }
 
-    // Create follow relationship
-    await prisma.follow.create({
-      data: {
-        followerId,
-        followingId
-      }
-    })
+            // Create follow relationship
+        await prisma.follow.create({
+          data: {
+            followerId,
+            followingId
+          }
+        })
 
-    return NextResponse.json({
-      message: 'Successfully followed user',
-      isFollowing: true
-    })
+        // Create notification for the followed user
+        await createFollowNotification(followerId, followingId)
+
+        return NextResponse.json({
+          message: 'Successfully followed user',
+          isFollowing: true
+        })
 
   } catch (error) {
     console.error('Error following user:', error)

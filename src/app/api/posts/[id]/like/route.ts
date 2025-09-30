@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { createPostLikeNotification } from '@/lib/notifications'
 
 export async function POST(
   request: NextRequest,
@@ -79,11 +80,14 @@ export async function POST(
         }
       })
 
-      return NextResponse.json({
-        message: 'Post liked',
-        liked: true,
-        likesCount: updatedPost.likesCount
-      })
+                // Create notification for the post owner
+          await createPostLikeNotification(session.user.id, postId)
+
+          return NextResponse.json({
+            message: 'Post liked',
+            liked: true,
+            likesCount: updatedPost.likesCount
+          })
     }
 
   } catch (error) {

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { SearchModal } from "@/components/search-modal"
 import { AuthModal } from "@/components/auth-modal"
 import { UserDropdown } from "@/components/user-dropdown"
+import { NotificationCenter } from "@/components/notifications"
 import { Search, User, Mic } from "lucide-react"
 import Link from "next/link"
 
@@ -52,6 +53,7 @@ export function Header() {
                 <span className="hidden sm:inline text-sm text-muted-foreground">
                   Welcome back, {session.user.name?.split(" ")[0]}!
                 </span>
+                <NotificationCenter />
                 <UserDropdown />
               </div>
             ) : (

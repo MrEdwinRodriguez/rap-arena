@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { createPostCommentNotification } from '@/lib/notifications'
 
 // GET /api/posts/[id]/comments - Get all comments for a post
 export async function GET(
@@ -132,20 +133,27 @@ export async function POST(
       }
     })
 
-    // Update comments count
-    await prisma.post.update({
-      where: { id: postId },
-      data: {
-        commentsCount: {
-          increment: 1
-        }
-      }
-    })
+            // Update comments count
+        await prisma.post.update({
+          where: { id: postId },
+          data: {
+            commentsCount: {
+              increment: 1
+            }
+          }
+        })
 
-    return NextResponse.json({
-      message: 'Comment added successfully',
-      comment
-    })
+        // Create notification for the post owner
+        await createPostCommentNotification(
+          session.user.id,
+          postId,
+          content.trim()
+        )
+
+        return NextResponse.json({
+          message: 'Comment added successfully',
+          comment
+        })
 
   } catch (error) {
     console.error('Error adding post comment:', error)

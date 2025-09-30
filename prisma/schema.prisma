@@ -68,6 +68,10 @@ model User {
   postCommentLikes PostCommentLike[]
   postLikes     PostLike[]
   plays         Play[]
+  
+  // Notifications
+  sentNotifications     Notification[] @relation("NotificationSender")
+  receivedNotifications Notification[] @relation("NotificationReceiver")
   country       Country?  @relation(fields: [countryId], references: [id])
   state         State?    @relation(fields: [stateId], references: [id])
   
@@ -115,6 +119,7 @@ model Recording {
   comments    Comment[]
   plays       Play[]
   posts       Post[]
+  notifications Notification[]
 }
 
 model Beat {
@@ -140,6 +145,7 @@ model Beat {
   
   user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   recordings  Recording[]
+  notifications Notification[]
 }
 
 model Vote {
@@ -182,6 +188,7 @@ model Comment {
   parent      Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
   replies     Comment[] @relation("CommentReplies")
   likes       CommentLike[]
+  notifications Notification[]
 }
 
 model Play {
@@ -259,6 +266,7 @@ model Post {
   recording     Recording? @relation(fields: [recordingId], references: [id], onDelete: SetNull)
   comments      PostComment[]
   likes         PostLike[]
+  notifications Notification[]
   
   @@index([userId])
   @@index([createdAt])
@@ -306,4 +314,36 @@ model PostCommentLike {
   comment   PostComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
   
   @@unique([userId, commentId])
+}
+
+model Notification {
+  id          String   @id @default(cuid())
+  type        String   // 'follow', 'post_comment', 'post_like', 'recording_comment', 'recording_like', 'beat_comment', 'beat_like', 'comment_reply', 'post_share', 'recording_share', 'beat_share'
+  senderId    String   // User who triggered the notification
+  receiverId  String   // User who receives the notification
+  
+  // Content references (optional, depends on notification type)
+  postId      String?  // For post-related notifications
+  recordingId String?  // For recording-related notifications
+  beatId      String?  // For beat-related notifications
+  commentId   String?  // For comment-related notifications
+  
+  // Notification content
+  title       String   // e.g., "New follower", "Comment on your post"
+  message     String   // e.g., "John Doe started following you"
+  
+  // Status
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  
+  // Relations
+  sender      User     @relation("NotificationSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver    User     @relation("NotificationReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  post        Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  recording   Recording? @relation(fields: [recordingId], references: [id], onDelete: Cascade)
+  beat        Beat?    @relation(fields: [beatId], references: [id], onDelete: Cascade)
+  comment     Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  
+  @@index([receiverId, createdAt])
+  @@index([receiverId, isRead])
 }
