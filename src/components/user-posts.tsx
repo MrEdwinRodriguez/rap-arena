@@ -7,8 +7,24 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
-import { MessageSquare, Heart, Share2, MoreHorizontal, Clock, Image, Smile, Send } from "lucide-react"
+import { MessageSquare, Heart, Share2, MoreHorizontal, Clock, Image, Smile, Send, Trash2 } from "lucide-react"
 import { PostInteractions } from "@/components/post-interactions"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 interface Post {
   id: string
@@ -53,6 +69,8 @@ export function UserPosts({ userId, user, isOwnProfile = false }: UserPostsProps
   const [postContent, setPostContent] = useState("")
   const [isPosting, setIsPosting] = useState(false)
   const [showPostInput, setShowPostInput] = useState(false)
+  const [postToDelete, setPostToDelete] = useState<string | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
     fetchPosts()
@@ -91,6 +109,32 @@ export function UserPosts({ userId, user, isOwnProfile = false }: UserPostsProps
   const getTierColor = (tier: number) => {
     const colors = ["bg-gray-500", "bg-green-500", "bg-blue-500", "bg-purple-500", "bg-yellow-500"]
     return colors[tier - 1] || "bg-gray-500"
+  }
+
+  const handleDeletePost = async () => {
+    if (!postToDelete) return
+
+    setIsDeleting(true)
+    try {
+      const response = await fetch(`/api/posts/${postToDelete}/delete`, {
+        method: 'DELETE'
+      })
+
+      if (response.ok) {
+        // Remove the deleted post from the list
+        setPosts(prev => prev.filter(post => post.id !== postToDelete))
+        setPostToDelete(null)
+      } else {
+        const error = await response.json()
+        console.error('Failed to delete post:', error)
+        alert('Failed to delete post. Please try again.')
+      }
+    } catch (error) {
+      console.error('Error deleting post:', error)
+      alert('Failed to delete post. Please try again.')
+    } finally {
+      setIsDeleting(false)
+    }
   }
 
   const getPostTypeIcon = (type: string) => {
@@ -139,13 +183,13 @@ export function UserPosts({ userId, user, isOwnProfile = false }: UserPostsProps
      }
    }
 
-   const handleInputClick = () => {
-     if (isOwnProfile || session?.user?.id === userId) {
-       setShowPostInput(true)
-     }
-   }
+     const handleInputClick = () => {
+    if (isOwnProfile || session?.user?.id === userId) {
+      setShowPostInput(true)
+             }
+  }
 
-   return (
+ return (
     <div className="space-y-4">
 		<div className="flex items-center justify-between">
 			<h2 className="text-xl font-semibold">Posts</h2>
@@ -269,9 +313,24 @@ export function UserPosts({ userId, user, isOwnProfile = false }: UserPostsProps
                     </div>
                   </div>
 
-                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
+                  {isOwnProfile && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => setPostToDelete(post.id)}
+                          className="text-red-600 focus:text-red-600 cursor-pointer"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete Post
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
                 </div>
 
                 {/* Post Content */}
@@ -312,6 +371,29 @@ export function UserPosts({ userId, user, isOwnProfile = false }: UserPostsProps
           ))}
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!postToDelete} onOpenChange={() => setPostToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Post</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this post? This action cannot be undone.
+              All comments and likes will also be deleted.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeletePost}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isDeleting ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 } 

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { SessionProvider } from "next-auth/react"
 import { UserProvider } from "@/lib/user-context"
+import { ThemeProvider } from "@/components/theme-provider"
 import { PostModal } from "@/components/post-modal"
 
 interface ProvidersProps {
@@ -27,19 +28,21 @@ export function Providers({ children }: ProvidersProps) {
 
   return (
     <SessionProvider>
-      <UserProvider>
-        {children}
-        
-        {/* Global Post Modal */}
-        <PostModal 
-          postId={postModalId}
-          isOpen={isPostModalOpen}
-          onClose={() => {
-            setIsPostModalOpen(false)
-            setPostModalId(null)
-          }}
-        />
-      </UserProvider>
+      <ThemeProvider defaultTheme="light">
+        <UserProvider>
+          {children}
+          
+          {/* Global Post Modal */}
+          <PostModal 
+            postId={postModalId}
+            isOpen={isPostModalOpen}
+            onClose={() => {
+              setIsPostModalOpen(false)
+              setPostModalId(null)
+            }}
+          />
+        </UserProvider>
+      </ThemeProvider>
     </SessionProvider>
   )
 } 

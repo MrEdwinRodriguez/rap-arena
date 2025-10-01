@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
+import { Switch } from "@/components/ui/switch"
+import { useTheme } from "@/components/theme-provider"
 import { 
   Dialog, 
   DialogContent, 
@@ -26,7 +28,9 @@ import {
   Eye, 
   EyeOff, 
   CheckCircle,
-  XCircle
+  XCircle,
+  Moon,
+  Sun
 } from "lucide-react"
 
 interface User {
@@ -47,6 +51,7 @@ interface AccountSettingsProps {
 
 export function AccountSettings({ user }: AccountSettingsProps) {
   const router = useRouter()
+  const { theme, toggleTheme } = useTheme()
   const [isDeactivating, setIsDeactivating] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [deleteConfirmation, setDeleteConfirmation] = useState("")
@@ -326,6 +331,31 @@ export function AccountSettings({ user }: AccountSettingsProps) {
           {message}
         </div>
       )}
+
+      {/* Appearance Settings */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            {theme === "dark" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+            Appearance
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label htmlFor="dark-mode">Dark Mode</Label>
+              <p className="text-sm text-muted-foreground">
+                Toggle between light and dark theme
+              </p>
+            </div>
+            <Switch
+              id="dark-mode"
+              checked={theme === "dark"}
+              onCheckedChange={toggleTheme}
+            />
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Privacy Settings */}
       <Card>
