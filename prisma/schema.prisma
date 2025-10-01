@@ -81,6 +81,11 @@ model User {
   
   // Posts
   posts         Post[]
+  
+  // Favorites
+  favoriteRecordings FavoriteRecording[]
+  favoriteBeats      FavoriteBeat[]
+  favoritePosts      FavoritePost[]
 }
 
 model VerificationToken {
@@ -120,6 +125,7 @@ model Recording {
   plays       Play[]
   posts       Post[]
   notifications Notification[]
+  favoritedBy FavoriteRecording[]
 }
 
 model Beat {
@@ -146,6 +152,7 @@ model Beat {
   user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   recordings  Recording[]
   notifications Notification[]
+  favoritedBy FavoriteBeat[]
 }
 
 model Vote {
@@ -267,6 +274,7 @@ model Post {
   comments      PostComment[]
   likes         PostLike[]
   notifications Notification[]
+  favoritedBy   FavoritePost[]
   
   @@index([userId])
   @@index([createdAt])
@@ -346,4 +354,43 @@ model Notification {
   
   @@index([receiverId, createdAt])
   @@index([receiverId, isRead])
+}
+
+model FavoriteRecording {
+  id          String   @id @default(cuid())
+  userId      String
+  recordingId String
+  createdAt   DateTime @default(now())
+  
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recording   Recording @relation(fields: [recordingId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, recordingId])
+  @@index([userId])
+}
+
+model FavoriteBeat {
+  id        String   @id @default(cuid())
+  userId    String
+  beatId    String
+  createdAt DateTime @default(now())
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  beat      Beat     @relation(fields: [beatId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, beatId])
+  @@index([userId])
+}
+
+model FavoritePost {
+  id        String   @id @default(cuid())
+  userId    String
+  postId    String
+  createdAt DateTime @default(now())
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, postId])
+  @@index([userId])
 }

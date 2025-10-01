@@ -10,6 +10,8 @@ import { Mic, Trophy, Users, Heart, MessageCircle, Play, Pause, Calendar, Music 
 import { RecordingInteractions } from "@/components/recording-interactions"
 import { FollowButton } from "@/components/follow-button"
 import { UserPosts } from "@/components/user-posts"
+import { UserFavorites } from "@/components/user-favorites"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 interface Recording {
   id: string
@@ -290,15 +292,22 @@ export function UserProfile({ user, recordings }: UserProfileProps) {
           />
         </div>
 
-        {/* Right Column - Public Recordings */}
+        {/* Right Column - Recordings & Favorites (only own profile) */}
         <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold flex items-center gap-2">
-              <Music className="h-5 w-5" />
-              Public Recordings
-            </h2>
-            <span className="text-sm text-muted-foreground">{recordings.length} recordings</span>
-          </div>
+          {isOwnProfile ? (
+            <Tabs defaultValue="recordings" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="recordings" className="gap-2">
+                  <Music className="h-4 w-4" />
+                  Recordings ({recordings.length})
+                </TabsTrigger>
+                <TabsTrigger value="favorites" className="gap-2">
+                  <Heart className="h-4 w-4" />
+                  Favorites
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="recordings" className="space-y-4 mt-6">
 
           {recordings.length === 0 ? (
             <Card>
@@ -386,6 +395,111 @@ export function UserProfile({ user, recordings }: UserProfileProps) {
                 </Card>
               ))}
             </div>
+          )}
+              </TabsContent>
+
+              <TabsContent value="favorites" className="mt-6">
+                <UserFavorites userId={user.id} />
+              </TabsContent>
+            </Tabs>
+          ) : (
+            <>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold flex items-center gap-2">
+                  <Music className="h-5 w-5" />
+                  Public Recordings
+                </h2>
+                <span className="text-sm text-muted-foreground">{recordings.length} recordings</span>
+              </div>
+
+              {recordings.length === 0 ? (
+                <Card>
+                  <CardContent className="text-center py-8">
+                    <Music className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p className="text-muted-foreground">No public recordings yet.</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-4">
+                  {recordings.map((recording) => (
+                    <Card key={recording.id} className="hover:shadow-md transition-shadow profile-recording">
+                      <CardContent className="p-4">
+                        <div className="flex items-start gap-4">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => playRecording(recording)}
+                            className="w-12 h-12 rounded-full bg-transparent flex-shrink-0"
+                            title={playingId === recording.id ? "Pause" : "Play"}
+                          >
+                            {playingId === recording.id ? (
+                              <Pause className="h-4 w-4" />
+                            ) : (
+                              <Play className="h-4 w-4" />
+                            )}
+                          </Button>
+
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="space-y-1 min-w-0">
+                                <h3 className="font-semibold text-lg truncate">{recording.title}</h3>
+                                {recording.description && (
+                                  <p className="text-sm text-muted-foreground line-clamp-2">
+                                    {recording.description}
+                                  </p>
+                                )}
+                                <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                                  <span>{formatTimeAgo(recording.createdAt)}</span>
+                                  {recording.beat && (
+                                    <>
+                                      <span>•</span>
+                                      <span>Beat: {recording.beat.title}</span>
+                                      {recording.beat.genre && (
+                                        <>
+                                          <span>•</span>
+                                          <Badge variant="outline" className="text-xs">
+                                            {recording.beat.genre}
+                                          </Badge>
+                                        </>
+                                      )}
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-4 text-sm text-muted-foreground flex-shrink-0">
+                                <RecordingInteractions
+                                  recordingId={recording.id}
+                                  initialLikesCount={recording.likesCount}
+                                  initialCommentsCount={recording.commentsCount}
+                                  size="sm"
+                                  recordingInfo={{
+                                    id: recording.id,
+                                    title: recording.title,
+                                    fileUrl: recording.fileUrl,
+                                    user: recording.user,
+                                    duration: recording.duration,
+                                    likesCount: recording.likesCount,
+                                    commentsCount: recording.commentsCount,
+                                    playsCount: recording.playsCount,
+                                    sharesCount: 0,
+                                    beat: recording.beat
+                                  }}
+                                />
+                                <div className="flex items-center gap-1">
+                                  <Users className="w-4 h-4" />
+                                  <span>{recording.playsCount}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>

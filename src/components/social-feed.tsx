@@ -20,10 +20,28 @@ import {
   Users,
   Clock,
   Trophy,
-  Download
+  Download,
+  MoreHorizontal,
+  Trash2
 } from "lucide-react"
 import { PostInteractions } from "@/components/post-interactions"
 import { RecordingInteractions } from "@/components/recording-interactions"
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import Link from "next/link"
 
 interface FeedUser {
@@ -99,6 +117,8 @@ export function SocialFeed() {
   const [audioElements, setAudioElements] = useState<{ [key: string]: HTMLAudioElement }>({})
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
+  const [itemToDelete, setItemToDelete] = useState<{ id: string; type: 'post' | 'recording' | 'beat' } | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
     if (session?.user?.id) {
@@ -154,6 +174,38 @@ export function SocialFeed() {
       console.error('Error creating post:', error)
     } finally {
       setIsPosting(false)
+    }
+  }
+
+  const handleDeleteItem = async () => {
+    if (!itemToDelete) return
+
+    setIsDeleting(true)
+    try {
+      const endpoint = itemToDelete.type === 'post' 
+        ? `/api/posts/${itemToDelete.id}/delete`
+        : itemToDelete.type === 'recording'
+        ? `/api/recordings/${itemToDelete.id}/delete`
+        : `/api/beats/${itemToDelete.id}/delete`
+
+      const response = await fetch(endpoint, {
+        method: 'DELETE'
+      })
+
+      if (response.ok) {
+        // Remove the deleted item from the feed
+        setFeedItems(prev => prev.filter(item => item.id !== itemToDelete.id))
+        setItemToDelete(null)
+      } else {
+        const error = await response.json()
+        console.error('Failed to delete item:', error)
+        alert('Failed to delete item. Please try again.')
+      }
+    } catch (error) {
+      console.error('Error deleting item:', error)
+      alert('Failed to delete item. Please try again.')
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -236,6 +288,25 @@ export function SocialFeed() {
                 <span className="capitalize">{item.type}</span>
               </div>
             </div>
+
+            {isOwnContent && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={() => setItemToDelete({ id: item.id, type: item.type as 'post' | 'recording' | 'beat' })}
+                    className="text-red-600 focus:text-red-600 cursor-pointer"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete {item.type}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         </CardHeader>
 
@@ -453,6 +524,31 @@ export function SocialFeed() {
           )}
         </>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!itemToDelete} onOpenChange={() => setItemToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {itemToDelete?.type}</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this {itemToDelete?.type}? This action cannot be undone.
+              {itemToDelete?.type === 'post' && ' All comments and likes will also be deleted.'}
+              {itemToDelete?.type === 'recording' && ' All comments, likes, and plays will also be deleted.'}
+              {itemToDelete?.type === 'beat' && ' All associated data will also be deleted.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteItem}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isDeleting ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

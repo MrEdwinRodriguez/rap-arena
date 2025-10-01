@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
-import { Heart, MessageCircle, Send, Users, Play, Pause } from "lucide-react"
+import { Heart, MessageCircle, Send, Users, Play, Pause, Star } from "lucide-react"
 import { CommentInteractions } from "@/components/comment-interactions"
 
 interface Comment {
@@ -98,10 +98,13 @@ export function RecordingInteractions({
   const [isTogglingLike, setIsTogglingLike] = useState(false)
   const [isPlayingRecording, setIsPlayingRecording] = useState(false)
   const [recordingAudio, setRecordingAudio] = useState<HTMLAudioElement | null>(null)
+  const [isFavorited, setIsFavorited] = useState(false)
+  const [isTogglingFavorite, setIsTogglingFavorite] = useState(false)
 
   // Fetch like status and counts when component mounts
   useEffect(() => {
     fetchLikeStatus()
+    fetchFavoriteStatus()
   }, [recordingId])
 
   // Fetch comments when dialog opens
@@ -140,6 +143,40 @@ export function RecordingInteractions({
       }
     } catch (error) {
       console.error('Error fetching like status:', error)
+    }
+  }
+
+  const fetchFavoriteStatus = async () => {
+    try {
+      const response = await fetch(`/api/recordings/${recordingId}/favorite`)
+      if (response.ok) {
+        const data = await response.json()
+        setIsFavorited(data.isFavorited)
+      }
+    } catch (error) {
+      console.error('Error fetching favorite status:', error)
+    }
+  }
+
+  const toggleFavorite = async () => {
+    if (!session?.user?.id) {
+      alert('Please sign in to favorite recordings')
+      return
+    }
+
+    setIsTogglingFavorite(true)
+    try {
+      const response = await fetch(`/api/recordings/${recordingId}/favorite`, {
+        method: 'POST'
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setIsFavorited(data.isFavorited)
+      }
+    } catch (error) {
+      console.error('Error toggling favorite:', error)
+    } finally {
+      setIsTogglingFavorite(false)
     }
   }
 
@@ -286,6 +323,17 @@ export function RecordingInteractions({
       >
         <Heart className={`${iconSize} ${isLiked ? 'fill-current' : ''}`} />
         {showCounts && <span>{likesCount}</span>}
+      </Button>
+
+      {/* Favorite Button */}
+      <Button
+        variant="ghost"
+        size={buttonSize}
+        onClick={toggleFavorite}
+        disabled={isTogglingFavorite}
+        className={`flex items-center gap-1 ${isFavorited ? 'text-yellow-500 hover:text-yellow-600' : 'text-muted-foreground hover:text-foreground'}`}
+      >
+        <Star className={`${iconSize} ${isFavorited ? 'fill-current' : ''}`} />
       </Button>
 
       {/* Comments Button */}

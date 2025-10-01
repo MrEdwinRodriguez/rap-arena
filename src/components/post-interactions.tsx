@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Heart, MessageCircle, Share2, Send, Reply, MoreHorizontal } from "lucide-react"
+import { Heart, MessageCircle, Share2, Send, Reply, MoreHorizontal, Star } from "lucide-react"
 
 interface PostInteractionsProps {
   postId: string
@@ -72,10 +72,13 @@ export function PostInteractions({
   const [isSubmittingComment, setIsSubmittingComment] = useState(false)
   const [replyingTo, setReplyingTo] = useState<string | null>(null)
   const [replyContent, setReplyContent] = useState("")
+  const [isFavorited, setIsFavorited] = useState(false)
+  const [isTogglingFavorite, setIsTogglingFavorite] = useState(false)
 
   // Load initial like status
   useEffect(() => {
     loadLikeStatus()
+    loadFavoriteStatus()
   }, [postId])
 
   const loadLikeStatus = async () => {
@@ -108,6 +111,40 @@ export function PostInteractions({
       }
     } catch (error) {
       console.error('Error loading comments:', error)
+    }
+  }
+
+  const loadFavoriteStatus = async () => {
+    try {
+      const response = await fetch(`/api/posts/${postId}/favorite`)
+      if (response.ok) {
+        const data = await response.json()
+        setIsFavorited(data.isFavorited)
+      }
+    } catch (error) {
+      console.error('Error loading favorite status:', error)
+    }
+  }
+
+  const toggleFavorite = async () => {
+    if (!session?.user?.id) {
+      alert('Please sign in to favorite posts')
+      return
+    }
+
+    setIsTogglingFavorite(true)
+    try {
+      const response = await fetch(`/api/posts/${postId}/favorite`, {
+        method: 'POST'
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setIsFavorited(data.isFavorited)
+      }
+    } catch (error) {
+      console.error('Error toggling favorite:', error)
+    } finally {
+      setIsTogglingFavorite(false)
     }
   }
 
@@ -277,6 +314,18 @@ export function PostInteractions({
         >
           <MessageCircle className="w-4 h-4 mr-1" />
           <span>{commentsCount}</span>
+        </Button>
+
+        <Button
+          variant="ghost"
+          size={size}
+          onClick={toggleFavorite}
+          disabled={isTogglingFavorite}
+          className={`${sizeClasses[size]} ${
+            isFavorited ? "text-yellow-500 hover:text-yellow-600" : "text-muted-foreground hover:text-yellow-500"
+          }`}
+        >
+          <Star className={`w-4 h-4 ${isFavorited ? "fill-current" : ""}`} />
         </Button>
 
         <Button
