@@ -85,7 +85,6 @@ model User {
   // Favorites
   favoriteRecordings FavoriteRecording[]
   favoriteBeats      FavoriteBeat[]
-  beatLikes          BeatLike[]
   favoritePosts      FavoritePost[]
 }
 
@@ -145,7 +144,6 @@ model Beat {
   mimeType    String?  // File MIME type
   userId      String
   downloads   Int      @default(0)
-  likesCount  Int      @default(0)
   isPublic    Boolean  @default(true)
   isFree      Boolean  @default(true)
   createdAt   DateTime @default(now())
@@ -155,7 +153,6 @@ model Beat {
   recordings  Recording[]
   notifications Notification[]
   favoritedBy FavoriteBeat[]
-  likes       BeatLike[]
 }
 
 model Vote {
@@ -396,16 +393,4 @@ model FavoritePost {
   
   @@unique([userId, postId])
   @@index([userId])
-}
-
-model BeatLike {
-  id        String   @id @default(cuid())
-  userId    String
-  beatId    String
-  createdAt DateTime @default(now())
-  
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  beat      Beat     @relation(fields: [beatId], references: [id], onDelete: Cascade)
-  
-  @@unique([userId, beatId])
 }

@@ -48,20 +48,16 @@ interface PostComment {
   replies?: PostComment[]
   parent?: {
     id: string
-    content: string
     user: {
-      id: string
       name?: string
       username?: string
-      image?: string
-      tier: number
     }
   }
 }
 
-export default function PostInteractions({ 
-  postId, 
-  initialLikesCount = 0, 
+export function PostInteractions({
+  postId,
+  initialLikesCount = 0,
   initialCommentsCount = 0,
   size = "default",
   postInfo
@@ -73,17 +69,17 @@ export default function PostInteractions({
   const [isCommentsOpen, setIsCommentsOpen] = useState(false)
   const [comments, setComments] = useState<PostComment[]>([])
   const [newComment, setNewComment] = useState("")
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false)
   const [replyingTo, setReplyingTo] = useState<string | null>(null)
   const [replyContent, setReplyContent] = useState("")
   const [isFavorited, setIsFavorited] = useState(false)
   const [isTogglingFavorite, setIsTogglingFavorite] = useState(false)
 
+  // Load initial like status
   useEffect(() => {
-    if (session?.user?.id) {
-      loadLikeStatus()
-      loadFavoriteStatus()
-    }
-  }, [session?.user?.id, postId])
+    loadLikeStatus()
+    loadFavoriteStatus()
+  }, [postId])
 
   const loadLikeStatus = async () => {
     try {
@@ -99,82 +95,12 @@ export default function PostInteractions({
     }
   }
 
-  const loadFavoriteStatus = async () => {
-    try {
-      const response = await fetch(`/api/posts/${postId}/favorite`)
-      if (response.ok) {
-        const data = await response.json()
-        setIsFavorited(data.isFavorited)
-      }
-    } catch (error) {
-      console.error('Error loading favorite status:', error)
+  // Load comments when modal opens
+  useEffect(() => {
+    if (isCommentsOpen) {
+      loadComments()
     }
-  }
-
-  const handleLike = async () => {
-    if (!session?.user?.id) return
-
-    try {
-      const response = await fetch(`/api/posts/${postId}/like`, {
-        method: 'POST'
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        setIsLiked(data.isLiked)
-        setLikesCount(data.likesCount)
-      } else {
-        console.error('Failed to toggle like')
-      }
-    } catch (error) {
-      console.error('Error toggling like:', error)
-    }
-  }
-
-  const toggleFavorite = async () => {
-    if (!session?.user?.id || isTogglingFavorite) return
-
-    setIsTogglingFavorite(true)
-    try {
-      const response = await fetch(`/api/posts/${postId}/favorite`, {
-        method: 'POST'
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        setIsFavorited(data.isFavorited)
-      } else {
-        console.error('Failed to toggle favorite')
-      }
-    } catch (error) {
-      console.error('Error toggling favorite:', error)
-    } finally {
-      setIsTogglingFavorite(false)
-    }
-  }
-
-  const handleShare = async () => {
-    const shareUrl = `${window.location.origin}/share/post/${postId}`
-    
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: postInfo ? `${postInfo.user.name || postInfo.user.username || 'User'} on Rap Arena` : 'Check out this post on Rap Arena',
-          text: postInfo?.content || 'Check out this post on Rap Arena',
-          url: shareUrl
-        })
-      } catch (err) {
-        console.log('Error sharing:', err)
-        // Fallback to clipboard
-        await navigator.clipboard.writeText(shareUrl)
-        alert('Link copied to clipboard!')
-      }
-    } else {
-      // Fallback to clipboard
-      await navigator.clipboard.writeText(shareUrl)
-      alert('Link copied to clipboard!')
-    }
-  }
+  }, [isCommentsOpen])
 
   const loadComments = async () => {
     try {
@@ -188,9 +114,64 @@ export default function PostInteractions({
     }
   }
 
-  const handleComment = async () => {
+  const loadFavoriteStatus = async () => {
+    try {
+      const response = await fetch(`/api/posts/${postId}/favorite`)
+      if (response.ok) {
+        const data = await response.json()
+        setIsFavorited(data.isFavorited)
+      }
+    } catch (error) {
+      console.error('Error loading favorite status:', error)
+    }
+  }
+
+  const toggleFavorite = async () => {
+    if (!session?.user?.id) {
+      alert('Please sign in to favorite posts')
+      return
+    }
+
+    setIsTogglingFavorite(true)
+    try {
+      const response = await fetch(`/api/posts/${postId}/favorite`, {
+        method: 'POST'
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setIsFavorited(data.isFavorited)
+      }
+    } catch (error) {
+      console.error('Error toggling favorite:', error)
+    } finally {
+      setIsTogglingFavorite(false)
+    }
+  }
+
+  const handleLike = async () => {
+    if (!session?.user?.id) return
+
+    try {
+      const response = await fetch(`/api/posts/${postId}/like`, {
+        method: 'POST'
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setIsLiked(data.liked)
+        setLikesCount(data.likesCount)
+      } else {
+        console.error('Failed to toggle like')
+      }
+    } catch (error) {
+      console.error('Error toggling like:', error)
+    }
+  }
+
+  const handleAddComment = async () => {
     if (!newComment.trim() || !session?.user?.id) return
 
+    setIsSubmittingComment(true)
     try {
       const response = await fetch(`/api/posts/${postId}/comments`, {
         method: 'POST',
@@ -213,6 +194,8 @@ export default function PostInteractions({
       }
     } catch (error) {
       console.error('Error adding comment:', error)
+    } finally {
+      setIsSubmittingComment(false)
     }
   }
 
@@ -315,9 +298,11 @@ export default function PostInteractions({
           variant="ghost"
           size={size}
           onClick={handleLike}
-          className={`${sizeClasses[size]} ${isLiked ? 'text-red-500' : 'text-muted-foreground hover:text-red-500'}`}
+          className={`${sizeClasses[size]} ${
+            isLiked ? "text-red-500 hover:text-red-600" : "text-muted-foreground hover:text-red-500"
+          }`}
         >
-          <Heart className={`w-4 h-4 mr-1 ${isLiked ? 'fill-current' : ''}`} />
+          <Heart className={`w-4 h-4 mr-1 ${isLiked ? "fill-current" : ""}`} />
           <span>{likesCount}</span>
         </Button>
 
@@ -334,22 +319,22 @@ export default function PostInteractions({
         <Button
           variant="ghost"
           size={size}
-          onClick={handleShare}
-          className={`${sizeClasses[size]} text-muted-foreground hover:text-green-500`}
+          onClick={toggleFavorite}
+          disabled={isTogglingFavorite}
+          className={`${sizeClasses[size]} ${
+            isFavorited ? "text-yellow-500 hover:text-yellow-600" : "text-muted-foreground hover:text-yellow-500"
+          }`}
         >
-          <Share2 className="w-4 h-4 mr-1" />
-          <span>Share</span>
+          <Star className={`w-4 h-4 ${isFavorited ? "fill-current" : ""}`} />
         </Button>
 
         <Button
           variant="ghost"
           size={size}
-          onClick={toggleFavorite}
-          disabled={isTogglingFavorite}
-          className={`${sizeClasses[size]} ${isFavorited ? 'text-yellow-500' : 'text-muted-foreground hover:text-yellow-500'}`}
+          className={`${sizeClasses[size]} text-muted-foreground hover:text-green-500`}
         >
-          <Star className={`w-4 h-4 mr-1 ${isFavorited ? 'fill-current' : ''}`} />
-          <span>Save</span>
+          <Share2 className="w-4 h-4 mr-1" />
+          <span>0</span>
         </Button>
       </div>
 
@@ -364,30 +349,24 @@ export default function PostInteractions({
           {postInfo && (
             <div className="border-b pb-4 mb-4">
               <div className="flex items-start gap-3">
-                <Avatar className="w-10 h-10">
-                  <AvatarImage src={postInfo.user.image || ''} alt={postInfo.user.name || 'User'} />
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={postInfo.user.image || "/placeholder.svg"} alt={postInfo.user.name} />
                   <AvatarFallback>
-                    {(postInfo.user.name || postInfo.user.username || 'U').charAt(0).toUpperCase()}
+                    {(postInfo.user.name || postInfo.user.username || 'U').slice(0, 2).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-medium">
-                      {postInfo.user.name || postInfo.user.username || 'User'}
-                    </span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="font-semibold text-sm">{postInfo.user.name || postInfo.user.username}</span>
                     <Badge className={`${getTierColor(postInfo.user.tier)} text-white text-xs`}>
-                      Tier {postInfo.user.tier}
+                      T{postInfo.user.tier}
                     </Badge>
-                    <span className="text-sm text-muted-foreground">
-                      {formatTimeAgo(postInfo.createdAt)}
-                    </span>
                   </div>
-                  <p className="text-sm">{postInfo.content}</p>
-                  {postInfo.recording && (
-                    <div className="mt-2 p-2 bg-muted rounded text-sm">
-                      <strong>Recording:</strong> {postInfo.recording.title}
-                    </div>
-                  )}
+                  <p className="text-sm text-muted-foreground line-clamp-3">{postInfo.content}</p>
+                  <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                    <span>{likesCount} likes</span>
+                    <span>{commentsCount} comments</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -396,33 +375,32 @@ export default function PostInteractions({
           {/* Comments List */}
           <div className="flex-1 overflow-y-auto space-y-4">
             {comments.map((comment) => (
-              <div key={comment.id} className="space-y-3">
-                <div className="flex gap-3">
-                  <Avatar className="w-8 h-8">
-                    <AvatarImage src={comment.user.image || ''} alt={comment.user.name || 'User'} />
+              <div key={comment.id} className="space-y-2">
+                {/* Main Comment */}
+                <div className="flex items-start gap-3">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={comment.user.image || "/placeholder.svg"} alt={comment.user.name} />
                     <AvatarFallback className="text-xs">
-                      {(comment.user.name || comment.user.username || 'U').charAt(0).toUpperCase()}
+                      {(comment.user.name || comment.user.username || 'U').slice(0, 2).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-medium text-sm">
-                        {comment.user.name || comment.user.username || 'User'}
-                      </span>
-                      <Badge className={`${getTierColor(comment.user.tier)} text-white text-xs`}>
-                        T{comment.user.tier}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground">
-                        {formatTimeAgo(comment.createdAt)}
-                      </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="bg-muted/50 rounded-lg p-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-semibold text-sm">{comment.user.name || comment.user.username}</span>
+                        <Badge className={`${getTierColor(comment.user.tier)} text-white text-xs`}>
+                          T{comment.user.tier}
+                        </Badge>
+                      </div>
+                      <p className="text-sm">{comment.content}</p>
                     </div>
-                    <p className="text-sm">{comment.content}</p>
-                    <div className="flex items-center gap-4 mt-2">
+                    <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                      <span>{formatTimeAgo(comment.createdAt)}</span>
                       <Button
                         variant="ghost"
                         size="sm"
+                        className="h-6 px-2 text-xs text-muted-foreground hover:text-red-500"
                         onClick={() => handleCommentLike(comment.id)}
-                        className="h-6 px-2 text-xs"
                       >
                         <Heart className="w-3 h-3 mr-1" />
                         {comment.likesCount}
@@ -430,44 +408,81 @@ export default function PostInteractions({
                       <Button
                         variant="ghost"
                         size="sm"
+                        className="h-6 px-2 text-xs text-muted-foreground hover:text-blue-500"
                         onClick={() => setReplyingTo(comment.id)}
-                        className="h-6 px-2 text-xs"
                       >
                         <Reply className="w-3 h-3 mr-1" />
                         Reply
                       </Button>
                     </div>
 
+                    {/* Reply Input */}
+                    {replyingTo === comment.id && (
+                      <div className="mt-2 flex items-start gap-2">
+                        <Avatar className="h-6 w-6">
+                          <AvatarImage src={session?.user?.image || "/placeholder.svg"} alt={session?.user?.name || ""} />
+                          <AvatarFallback className="text-xs">
+                            {(session?.user?.name || 'U').slice(0, 2).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 space-y-2">
+                          <Textarea
+                            placeholder={`Reply to ${comment.user.name || comment.user.username}...`}
+                            value={replyContent}
+                            onChange={(e) => setReplyContent(e.target.value)}
+                            className="min-h-[60px] text-sm resize-none"
+                          />
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setReplyingTo(null)
+                                setReplyContent("")
+                              }}
+                            >
+                              Cancel
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={() => handleReply(comment.id)}
+                              disabled={!replyContent.trim()}
+                            >
+                              Reply
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Replies */}
                     {comment.replies && comment.replies.length > 0 && (
-                      <div className="ml-4 mt-3 space-y-3">
+                      <div className="mt-2 space-y-2">
                         {comment.replies.map((reply) => (
-                          <div key={reply.id} className="flex gap-2">
-                            <Avatar className="w-6 h-6">
-                              <AvatarImage src={reply.user.image || ''} alt={reply.user.name || 'User'} />
+                          <div key={reply.id} className="flex items-start gap-2 ml-4">
+                            <Avatar className="h-6 w-6">
+                              <AvatarImage src={reply.user.image || "/placeholder.svg"} alt={reply.user.name} />
                               <AvatarFallback className="text-xs">
-                                {(reply.user.name || reply.user.username || 'U').charAt(0).toUpperCase()}
+                                {(reply.user.name || reply.user.username || 'U').slice(0, 2).toUpperCase()}
                               </AvatarFallback>
                             </Avatar>
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="font-medium text-xs">
-                                  {reply.user.name || reply.user.username || 'User'}
-                                </span>
-                                <Badge className={`${getTierColor(reply.user.tier)} text-white text-xs`}>
-                                  T{reply.user.tier}
-                                </Badge>
-                                <span className="text-xs text-muted-foreground">
-                                  {formatTimeAgo(reply.createdAt)}
-                                </span>
+                            <div className="flex-1 min-w-0">
+                              <div className="bg-muted/30 rounded-lg p-2">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="font-semibold text-xs">{reply.user.name || reply.user.username}</span>
+                                  <Badge className={`${getTierColor(reply.user.tier)} text-white text-xs`}>
+                                    T{reply.user.tier}
+                                  </Badge>
+                                </div>
+                                <p className="text-xs">{reply.content}</p>
                               </div>
-                              <p className="text-xs">{reply.content}</p>
-                              <div className="flex items-center gap-2 mt-1">
+                              <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                                <span>{formatTimeAgo(reply.createdAt)}</span>
                                 <Button
                                   variant="ghost"
                                   size="sm"
+                                  className="h-5 px-1 text-xs text-muted-foreground hover:text-red-500"
                                   onClick={() => handleCommentLike(reply.id)}
-                                  className="h-5 px-1 text-xs"
                                 >
                                   <Heart className="w-3 h-3 mr-1" />
                                   {reply.likesCount}
@@ -478,38 +493,6 @@ export default function PostInteractions({
                         ))}
                       </div>
                     )}
-
-                    {/* Reply Form */}
-                    {replyingTo === comment.id && (
-                      <div className="ml-4 mt-3">
-                        <div className="flex gap-2">
-                          <Textarea
-                            placeholder="Write a reply..."
-                            value={replyContent}
-                            onChange={(e) => setReplyContent(e.target.value)}
-                            className="min-h-[60px] text-sm"
-                          />
-                          <Button
-                            onClick={() => handleReply(comment.id)}
-                            disabled={!replyContent.trim()}
-                            size="sm"
-                          >
-                            <Send className="w-4 h-4" />
-                          </Button>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setReplyingTo(null)
-                            setReplyContent("")
-                          }}
-                          className="mt-2 h-6 px-2 text-xs"
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
@@ -517,21 +500,37 @@ export default function PostInteractions({
           </div>
 
           {/* Add Comment */}
-          {session?.user?.id && (
-            <div className="border-t pt-4">
-              <div className="flex gap-2">
-                <Textarea
-                  placeholder="Write a comment..."
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  className="min-h-[60px]"
-                />
-                <Button
-                  onClick={handleComment}
-                  disabled={!newComment.trim()}
-                >
-                  <Send className="w-4 h-4" />
-                </Button>
+          {session?.user && (
+            <div className="border-t pt-4 mt-4">
+              <div className="flex items-start gap-3">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={session.user.image || "/placeholder.svg"} alt={session.user.name || ""} />
+                  <AvatarFallback className="text-sm">
+                    {(session.user.name || 'U').slice(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 space-y-2">
+                  <Textarea
+                    placeholder="Write a comment..."
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    className="min-h-[60px] resize-none"
+                  />
+                  <div className="flex justify-end">
+                    <Button
+                      onClick={handleAddComment}
+                      disabled={!newComment.trim() || isSubmittingComment}
+                      size="sm"
+                    >
+                      {isSubmittingComment ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      ) : (
+                        <Send className="h-4 w-4 mr-2" />
+                      )}
+                      {isSubmittingComment ? "Posting..." : "Comment"}
+                    </Button>
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -539,4 +538,4 @@ export default function PostInteractions({
       </Dialog>
     </>
   )
-}
+} 

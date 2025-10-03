@@ -24,8 +24,8 @@ import {
   MoreHorizontal,
   Trash2
 } from "lucide-react"
-import { PostInteractions } from "@/components/post-interactions"
-import { RecordingInteractions } from "@/components/recording-interactions"
+import PostInteractions from "@/components/post-interactions"
+import RecordingInteractions from "@/components/recording-interactions"
 import { 
   DropdownMenu,
   DropdownMenuContent,

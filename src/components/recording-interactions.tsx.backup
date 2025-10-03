@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
-import { Heart, MessageCircle, Send, Users, Play, Pause, Star, Share2 } from "lucide-react"
+import { Heart, MessageCircle, Send, Users, Play, Pause, Star } from "lucide-react"
 import { CommentInteractions } from "@/components/comment-interactions"
 
 interface Comment {
@@ -49,13 +49,7 @@ interface Reply {
 interface RecordingInfo {
   id: string
   title: string
-  description?: string
   fileUrl: string
-  duration?: number
-  likesCount: number
-  commentsCount: number
-  playsCount: number
-  sharesCount: number
   user: {
     id: string
     name?: string
@@ -63,12 +57,15 @@ interface RecordingInfo {
     image?: string
     tier: number
   }
+  duration?: number
+  likesCount: number
+  commentsCount: number
+  playsCount: number
+  sharesCount: number
   beat?: {
     id: string
     title: string
     genre?: string
-    bpm?: number
-    key?: string
   }
 }
 
@@ -76,51 +73,64 @@ interface RecordingInteractionsProps {
   recordingId: string
   initialLikesCount?: number
   initialCommentsCount?: number
-  initialPlaysCount?: number
-  initialSharesCount?: number
-  size?: "sm" | "default" | "lg"
   showCounts?: boolean
+  size?: "sm" | "md" | "lg"
   recordingInfo?: RecordingInfo
 }
 
-export default function RecordingInteractions({
-  recordingId,
-  initialLikesCount = 0,
+export function RecordingInteractions({ 
+  recordingId, 
+  initialLikesCount = 0, 
   initialCommentsCount = 0,
-  initialPlaysCount = 0,
-  initialSharesCount = 0,
-  size = "default",
   showCounts = true,
+  size = "md",
   recordingInfo
 }: RecordingInteractionsProps) {
   const { data: session } = useSession()
   const [isLiked, setIsLiked] = useState(false)
   const [likesCount, setLikesCount] = useState(initialLikesCount)
   const [commentsCount, setCommentsCount] = useState(initialCommentsCount)
-  const [playsCount, setPlaysCount] = useState(initialPlaysCount)
-  const [sharesCount, setSharesCount] = useState(initialSharesCount)
-  const [isTogglingLike, setIsTogglingLike] = useState(false)
-  const [isCommentsOpen, setIsCommentsOpen] = useState(false)
   const [comments, setComments] = useState<Comment[]>([])
   const [newComment, setNewComment] = useState("")
+  const [isCommentsOpen, setIsCommentsOpen] = useState(false)
+  const [isLoadingComments, setIsLoadingComments] = useState(false)
   const [isSubmittingComment, setIsSubmittingComment] = useState(false)
-  const [isFavorited, setIsFavorited] = useState(false)
-  const [isTogglingFavorite, setIsTogglingFavorite] = useState(false)
+  const [isTogglingLike, setIsTogglingLike] = useState(false)
   const [isPlayingRecording, setIsPlayingRecording] = useState(false)
   const [recordingAudio, setRecordingAudio] = useState<HTMLAudioElement | null>(null)
+  const [isFavorited, setIsFavorited] = useState(false)
+  const [isTogglingFavorite, setIsTogglingFavorite] = useState(false)
 
+  // Fetch like status and counts when component mounts
   useEffect(() => {
-    if (session?.user?.id) {
-      fetchLikeStatus()
-      fetchFavoriteStatus()
-    }
-  }, [session?.user?.id, recordingId])
+    fetchLikeStatus()
+    fetchFavoriteStatus()
+  }, [recordingId])
 
+  // Fetch comments when dialog opens
   useEffect(() => {
-    if (isCommentsOpen) {
+    if (isCommentsOpen && comments.length === 0) {
       fetchComments()
     }
-  }, [isCommentsOpen, recordingId])
+  }, [isCommentsOpen])
+
+  // Cleanup audio when component unmounts or modal closes
+  useEffect(() => {
+    return () => {
+      if (recordingAudio) {
+        recordingAudio.pause()
+        recordingAudio.src = ''
+      }
+    }
+  }, [recordingAudio])
+
+  // Pause audio when modal closes
+  useEffect(() => {
+    if (!isCommentsOpen && recordingAudio) {
+      recordingAudio.pause()
+      setIsPlayingRecording(false)
+    }
+  }, [isCommentsOpen, recordingAudio])
 
   const fetchLikeStatus = async () => {
     try {
@@ -148,7 +158,30 @@ export default function RecordingInteractions({
     }
   }
 
+  const toggleFavorite = async () => {
+    if (!session?.user?.id) {
+      alert('Please sign in to favorite recordings')
+      return
+    }
+
+    setIsTogglingFavorite(true)
+    try {
+      const response = await fetch(`/api/recordings/${recordingId}/favorite`, {
+        method: 'POST'
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setIsFavorited(data.isFavorited)
+      }
+    } catch (error) {
+      console.error('Error toggling favorite:', error)
+    } finally {
+      setIsTogglingFavorite(false)
+    }
+  }
+
   const fetchComments = async () => {
+    setIsLoadingComments(true)
     try {
       const response = await fetch(`/api/recordings/${recordingId}/comments`)
       if (response.ok) {
@@ -157,6 +190,8 @@ export default function RecordingInteractions({
       }
     } catch (error) {
       console.error('Error fetching comments:', error)
+    } finally {
+      setIsLoadingComments(false)
     }
   }
 
@@ -186,57 +221,6 @@ export default function RecordingInteractions({
       alert('Failed to toggle like')
     } finally {
       setIsTogglingLike(false)
-    }
-  }
-
-  const toggleFavorite = async () => {
-    if (!session?.user?.id) {
-      alert('Please sign in to favorite recordings')
-      return
-    }
-
-    setIsTogglingFavorite(true)
-    try {
-      const response = await fetch(`/api/recordings/${recordingId}/favorite`, {
-        method: 'POST'
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        setIsFavorited(data.isFavorited)
-      } else {
-        const error = await response.json()
-        console.error('Favorite toggle error:', error)
-        alert(error.details ? `${error.error}: ${error.details}` : error.error || 'Failed to toggle favorite')
-      }
-    } catch (error) {
-      console.error('Error toggling favorite:', error)
-      alert('Failed to toggle favorite')
-    } finally {
-      setIsTogglingFavorite(false)
-    }
-  }
-
-  const handleShare = async () => {
-    const shareUrl = `${window.location.origin}/share/recording/${recordingId}`
-    
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: recordingInfo ? `${recordingInfo.title} by ${recordingInfo.user.name || recordingInfo.user.username || 'Artist'}` : 'Check out this recording on Rap Arena',
-          text: recordingInfo?.description || recordingInfo?.title || 'Check out this recording on Rap Arena',
-          url: shareUrl
-        })
-      } catch (err) {
-        console.log('Error sharing:', err)
-        // Fallback to clipboard
-        await navigator.clipboard.writeText(shareUrl)
-        alert('Link copied to clipboard!')
-      }
-    } else {
-      // Fallback to clipboard
-      await navigator.clipboard.writeText(shareUrl)
-      alert('Link copied to clipboard!')
     }
   }
 
@@ -465,84 +449,59 @@ export default function RecordingInteractions({
             )}
 
             {/* Comments List */}
-            <div className="space-y-4 max-h-96 overflow-y-auto">
-              {comments.map((comment) => (
-                <div key={comment.id} className="flex gap-3">
-                  <Avatar className="h-8 w-8 flex-shrink-0">
-                    <AvatarImage src={comment.user.image || "/placeholder.svg"} alt={comment.user.name || comment.user.username} />
-                    <AvatarFallback className="text-xs">
-                      {(comment.user.name || comment.user.username || 'U').slice(0, 2).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-medium text-sm">
-                        {comment.user.name || comment.user.username}
-                      </span>
-                      <Badge className={`${getTierColor(comment.user.tier)} text-white text-xs`}>
-                        T{comment.user.tier}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground">
-                        {formatTimeAgo(comment.createdAt)}
-                      </span>
-                    </div>
-                    <p className="text-sm break-words">{comment.content}</p>
-                    <CommentInteractions
-                      commentId={comment.id}
-                      initialLikesCount={comment.likesCount}
-                      size="sm"
-                    />
-                    {comment.replies && comment.replies.length > 0 && (
-                      <div className="mt-3 ml-4 space-y-3">
-                        {comment.replies.map((reply) => (
-                          <div key={reply.id} className="flex gap-2">
-                            <Avatar className="h-6 w-6 flex-shrink-0">
-                              <AvatarImage src={reply.user.image || "/placeholder.svg"} alt={reply.user.name || reply.user.username} />
-                              <AvatarFallback className="text-xs">
-                                {(reply.user.name || reply.user.username || 'U').slice(0, 2).toUpperCase()}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="font-medium text-xs">
-                                  {reply.user.name || reply.user.username}
-                                </span>
-                                <Badge className={`${getTierColor(reply.user.tier)} text-white text-xs`}>
-                                  T{reply.user.tier}
-                                </Badge>
-                                <span className="text-xs text-muted-foreground">
-                                  {formatTimeAgo(reply.createdAt)}
-                                </span>
-                              </div>
-                              <p className="text-xs break-words">{reply.content}</p>
-                              <CommentInteractions
-                                commentId={reply.id}
-                                initialLikesCount={reply.likesCount}
-                                size="sm"
-                              />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+            <div className="max-h-96 overflow-y-auto space-y-4">
+              {isLoadingComments ? (
+                <div className="flex justify-center py-8">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
                 </div>
-              ))}
+              ) : comments.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <MessageCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p>No comments yet. Be the first to comment!</p>
+                </div>
+              ) : (
+                comments.map((comment) => (
+                  <div key={comment.id} className="flex gap-3 p-3 rounded-lg bg-muted/20">
+                    <Avatar className="h-8 w-8 flex-shrink-0">
+                      <AvatarImage src={comment.user.image || "/placeholder.svg"} alt={comment.user.name || comment.user.username} />
+                      <AvatarFallback className="text-xs">
+                        {(comment.user.name || comment.user.username || 'U').slice(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-medium text-sm truncate">
+                          {comment.user.name || comment.user.username}
+                        </span>
+                        <Badge className={`${getTierColor(comment.user.tier)} text-white text-xs px-1 py-0`}>
+                          T{comment.user.tier}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">
+                          {formatTimeAgo(comment.createdAt)}
+                        </span>
+                      </div>
+                      <p className="text-sm text-foreground break-words">{comment.content}</p>
+                      <CommentInteractions
+                        commentId={comment.id}
+                        initialLikesCount={comment.likesCount}
+                        replies={comment.replies}
+                        onReplyAdded={(reply) => {
+                          // Update the comments list with the new reply
+                          setComments(prev => prev.map(c => 
+                            c.id === comment.id 
+                              ? { ...c, replies: [...(c.replies || []), reply] }
+                              : c
+                          ))
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </DialogContent>
       </Dialog>
-
-      {/* Share Button */}
-      <Button
-        variant="ghost"
-        size={buttonSize}
-        onClick={handleShare}
-        className="flex items-center gap-1 text-muted-foreground hover:text-foreground"
-      >
-        <Share2 className={iconSize} />
-        {showCounts && <span>{sharesCount}</span>}
-      </Button>
     </div>
   )
-}
+} 
