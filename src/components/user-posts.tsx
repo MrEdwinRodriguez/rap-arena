@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import { MessageSquare, Heart, Share2, MoreHorizontal, Clock, Image, Smile, Send, Trash2 } from "lucide-react"
-import { PostInteractions } from "@/components/post-interactions"
+import PostInteractions from "@/components/post-interactions"
 import {
   DropdownMenu,
   DropdownMenuContent,

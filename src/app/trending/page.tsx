@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { TrendingUp, Trophy, Play, Pause, Clock, Users } from "lucide-react"
-import { RecordingInteractions } from "@/components/recording-interactions"
+import RecordingInteractions from "@/components/recording-interactions"
 import Link from "next/link"
 
 interface TrendingRecording {

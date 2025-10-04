@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Play, Pause, Download, Eye, EyeOff, Calendar, Music, Trash2, AlertTriangle } from "lucide-react"
-import { RecordingInteractions } from "@/components/recording-interactions"
+import RecordingInteractions from "@/components/recording-interactions"
 
 interface Recording {
   id: string

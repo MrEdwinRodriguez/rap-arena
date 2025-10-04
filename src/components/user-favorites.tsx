@@ -7,8 +7,8 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Star, Music, FileMusic, MessageSquare, Play, Pause, Trophy } from "lucide-react"
-import { RecordingInteractions } from "@/components/recording-interactions"
-import { PostInteractions } from "@/components/post-interactions"
+import RecordingInteractions from "@/components/recording-interactions"
+import PostInteractions from "@/components/post-interactions"
 import Link from "next/link"
 
 interface UserFavoritesProps {

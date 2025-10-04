@@ -4,9 +4,9 @@ import { Header } from '@/components/header'
 import { UserProfile } from '@/components/user-profile'
 
 interface ProfilePageProps {
-  params: {
+  params: Promise<{
     userId: string
-  }
+  }>
 }
 
 async function getUser(userId: string) {
@@ -100,7 +100,8 @@ async function getUser(userId: string) {
 }
 
 export default async function ProfilePage({ params }: ProfilePageProps) {
-  const data = await getUser(params.userId)
+  const { userId } = await params
+  const data = await getUser(userId)
 
   if (!data) {
     notFound()
