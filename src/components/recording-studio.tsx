@@ -10,10 +10,34 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Mic, Square, Play, Pause, RotateCcw, Save, Trash2, Upload } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Mic, Square, Play, Pause, RotateCcw, Save, Trash2, Upload, Music, Volume2, VolumeX } from "lucide-react"
 
 // Create context for refreshing recordings
 const RecordingRefreshContext = createContext<(() => void) | null>(null)
+
+interface Beat {
+  id: string
+  title: string
+  description?: string
+  fileUrl: string
+  genre?: string
+  bpm?: number
+  key?: string
+  mood?: string
+  tags: string[]
+  duration?: number
+  downloads: number
+  likesCount: number
+  createdAt: string
+  user: {
+    id: string
+    name?: string
+    username?: string
+    image?: string
+    tier: number
+  }
+}
 
 export function RecordingStudio() {
   const { data: session } = useSession()
@@ -27,17 +51,46 @@ export function RecordingStudio() {
   const [isUploading, setIsUploading] = useState(false)
   const [uploadSuccess, setUploadSuccess] = useState(false)
   
+  // Beat-related state
+  const [beats, setBeats] = useState<Beat[]>([])
+  const [selectedBeat, setSelectedBeat] = useState<Beat | null>(null)
+  const [isBeatPlaying, setIsBeatPlaying] = useState(false)
+  const [beatVolume, setBeatVolume] = useState(0.5)
+  const [isBeatMuted, setIsBeatMuted] = useState(false)
+  const [loadingBeats, setLoadingBeats] = useState(true)
+  
   // Form fields for saving
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
+  const beatAudioRef = useRef<HTMLAudioElement | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
   const MAX_RECORDING_TIME = 60 // 60 seconds
   const MIN_RECORDING_TIME = 20 // 20 seconds
+
+  // Fetch default beats
+  const fetchBeats = async () => {
+    try {
+      setLoadingBeats(true)
+      const response = await fetch('/api/beats/default')
+      if (response.ok) {
+        const data = await response.json()
+        setBeats(data.beats || [])
+      } else {
+        console.error('Failed to fetch beats')
+        setBeats([])
+      }
+    } catch (error) {
+      console.error('Error fetching beats:', error)
+      setBeats([])
+    } finally {
+      setLoadingBeats(false)
+    }
+  }
 
   useEffect(() => {
     // Request microphone permission on component mount
@@ -46,12 +99,18 @@ export function RecordingStudio() {
       .then(() => setHasPermission(true))
       .catch(() => setHasPermission(false))
 
+    // Fetch beats
+    fetchBeats()
+
     return () => {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((track) => track.stop())
       }
       if (intervalRef.current) {
         clearInterval(intervalRef.current)
+      }
+      if (beatAudioRef.current) {
+        beatAudioRef.current.pause()
       }
     }
   }, [])
@@ -83,6 +142,13 @@ export function RecordingStudio() {
       setIsRecording(true)
       setRecordingTime(0)
 
+      // Start beat if selected
+      if (selectedBeat && beatAudioRef.current) {
+        beatAudioRef.current.currentTime = 0
+        beatAudioRef.current.play()
+        setIsBeatPlaying(true)
+      }
+
       // Start timer
       intervalRef.current = setInterval(() => {
         setRecordingTime((prev) => {
@@ -105,6 +171,11 @@ export function RecordingStudio() {
       setIsRecording(false)
       if (intervalRef.current) {
         clearInterval(intervalRef.current)
+      }
+      // Stop beat when recording stops
+      if (beatAudioRef.current) {
+        beatAudioRef.current.pause()
+        setIsBeatPlaying(false)
       }
     }
   }
@@ -132,6 +203,55 @@ export function RecordingStudio() {
     if (audioRef.current) {
       audioRef.current.pause()
       audioRef.current.currentTime = 0
+    }
+  }
+
+  // Beat control functions
+  const playBeat = () => {
+    if (selectedBeat && beatAudioRef.current) {
+      beatAudioRef.current.play()
+      setIsBeatPlaying(true)
+    }
+  }
+
+  const pauseBeat = () => {
+    if (beatAudioRef.current) {
+      beatAudioRef.current.pause()
+      setIsBeatPlaying(false)
+    }
+  }
+
+  const stopBeat = () => {
+    if (beatAudioRef.current) {
+      beatAudioRef.current.pause()
+      beatAudioRef.current.currentTime = 0
+      setIsBeatPlaying(false)
+    }
+  }
+
+  const toggleBeatMute = () => {
+    if (beatAudioRef.current) {
+      beatAudioRef.current.muted = !isBeatMuted
+      setIsBeatMuted(!isBeatMuted)
+    }
+  }
+
+  const handleBeatVolumeChange = (volume: number) => {
+    setBeatVolume(volume)
+    if (beatAudioRef.current) {
+      beatAudioRef.current.volume = volume
+    }
+  }
+
+  const handleBeatSelect = (beatId: string) => {
+    const beat = beats.find(b => b.id === beatId)
+    if (beat) {
+      setSelectedBeat(beat)
+      // Stop current beat if playing
+      stopBeat()
+    } else {
+      setSelectedBeat(null)
+      stopBeat()
     }
   }
 
@@ -264,6 +384,91 @@ export function RecordingStudio() {
             </div>
           )}
 
+          {/* Beat Selection */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Music className="h-5 w-5" />
+              <h3 className="text-lg font-medium">Select Beat (Optional)</h3>
+            </div>
+            
+            <div className="space-y-3">
+              <Select value={selectedBeat?.id || "none"} onValueChange={handleBeatSelect}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose a beat to rap over" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No Beat</SelectItem>
+                  {loadingBeats ? (
+                    <SelectItem value="loading" disabled>Loading beats...</SelectItem>
+                  ) : (
+                    beats.map((beat) => (
+                      <SelectItem key={beat.id} value={beat.id}>
+                        {beat.title} - {beat.genre} ({beat.bpm} BPM)
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+
+              {selectedBeat && (
+                <div className="bg-muted/30 p-4 rounded-lg space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-medium">{selectedBeat.title}</h4>
+                      <p className="text-sm text-muted-foreground">
+                        {selectedBeat.genre} • {selectedBeat.bpm} BPM • {selectedBeat.key}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={isBeatPlaying ? pauseBeat : playBeat}
+                        disabled={isRecording}
+                      >
+                        {isBeatPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={stopBeat}
+                        disabled={isRecording}
+                      >
+                        <Square className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-3">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={toggleBeatMute}
+                      className="p-2"
+                    >
+                      {isBeatMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+                    </Button>
+                    <div className="flex-1">
+                      <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.1"
+                        value={beatVolume}
+                        onChange={(e) => handleBeatVolumeChange(parseFloat(e.target.value))}
+                        className="w-full"
+                        disabled={isRecording}
+                      />
+                    </div>
+                    <span className="text-sm text-muted-foreground w-8">
+                      {Math.round(beatVolume * 100)}%
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Recording Controls */}
           <div className="flex justify-center">
             {!isRecording && !audioBlob && (
@@ -335,12 +540,27 @@ export function RecordingStudio() {
             </div>
           )}
 
-          {/* Audio Element */}
+          {/* Audio Elements */}
           {audioUrl && (
             <audio
               ref={audioRef}
               src={audioUrl}
               onEnded={() => setIsPlaying(false)}
+              className="hidden"
+            />
+          )}
+          
+          {selectedBeat && (
+            <audio
+              ref={beatAudioRef}
+              src={selectedBeat.fileUrl}
+              onEnded={() => setIsBeatPlaying(false)}
+              onLoadedMetadata={() => {
+                if (beatAudioRef.current) {
+                  beatAudioRef.current.volume = beatVolume
+                  beatAudioRef.current.muted = isBeatMuted
+                }
+              }}
               className="hidden"
             />
           )}

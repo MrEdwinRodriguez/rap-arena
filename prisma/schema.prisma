@@ -148,6 +148,7 @@ model Beat {
   likesCount  Int      @default(0)
   isPublic    Boolean  @default(true)
   isFree      Boolean  @default(true)
+  isDefault   Boolean  @default(false) // Flag for default beats
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   

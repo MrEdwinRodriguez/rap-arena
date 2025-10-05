@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -8,7 +8,31 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { BeatUploader } from "@/components/beat-uploader"
 import { BeatPlayer } from "@/components/beat-player"
+import { BeatInteractions } from "@/components/beat-interactions"
 import { Music, Upload, TrendingUp, Filter, Heart, Download, Mic } from "lucide-react"
+
+interface Beat {
+  id: string
+  title: string
+  description?: string
+  fileUrl: string
+  genre?: string
+  bpm?: number
+  key?: string
+  mood?: string
+  tags: string[]
+  duration?: number
+  downloads: number
+  likesCount: number
+  createdAt: string
+  user: {
+    id: string
+    name?: string
+    username?: string
+    image?: string
+    tier: number
+  }
+}
 
 const mockBeats = [
   {
@@ -78,10 +102,37 @@ const mockBeats = [
 
 export function BeatLibrary() {
   const [activeTab, setActiveTab] = useState("browse")
-  // const [showUploader, setShowUploader] = useState(false)
+  const [beats, setBeats] = useState<Beat[]>([])
+  const [loading, setLoading] = useState(true)
   const [selectedGenre, setSelectedGenre] = useState<string | null>(null)
   const [selectedMood, setSelectedMood] = useState<string | null>(null)
   const [currentlyPlaying, setCurrentlyPlaying] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetchBeats()
+  }, [selectedGenre])
+
+  const fetchBeats = async () => {
+    try {
+      setLoading(true)
+      const params = new URLSearchParams()
+      if (selectedGenre) params.append('genre', selectedGenre)
+      
+      const response = await fetch(`/api/beats/default?${params.toString()}`)
+      if (response.ok) {
+        const data = await response.json()
+        setBeats(data.beats)
+      } else {
+        console.error('Failed to fetch beats')
+        setBeats([])
+      }
+    } catch (error) {
+      console.error('Error fetching beats:', error)
+      setBeats([])
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const genres = ["Trap", "Boom Bap", "Drill", "Lo-Fi", "Jazz Rap", "Experimental"]
   const moods = ["Dark", "Uplifting", "Chill", "Aggressive", "Nostalgic", "Atmospheric"]
@@ -91,7 +142,7 @@ export function BeatLibrary() {
     return colors[tier - 1] || "bg-gray-500"
   }
 
-  const filteredBeats = mockBeats.filter((beat) => {
+  const filteredBeats = beats.filter((beat) => {
     if (selectedGenre && beat.genre !== selectedGenre) return false
     if (selectedMood && beat.mood !== selectedMood) return false
     return true
@@ -179,20 +230,31 @@ export function BeatLibrary() {
 
             {/* Beat Grid */}
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredBeats.map((beat) => (
+              {loading ? (
+                <div className="col-span-full text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                  <p className="text-muted-foreground mt-2">Loading beats...</p>
+                </div>
+              ) : filteredBeats.length === 0 ? (
+                <div className="col-span-full text-center py-8">
+                  <Music className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">No beats found</p>
+                </div>
+              ) : (
+                filteredBeats.map((beat) => (
                 <Card key={beat.id} className="hover:shadow-lg transition-shadow">
                   <CardHeader className="pb-3">
                     <div className="flex items-center gap-3">
                       <Avatar className="h-10 w-10">
-                        <AvatarImage src={beat.producer.avatar || "/placeholder.svg"} alt={beat.producer.username} />
-                        <AvatarFallback>{beat.producer.username.slice(0, 2).toUpperCase()}</AvatarFallback>
+                        <AvatarImage src={beat.user.image || "/placeholder.svg"} alt={beat.user.username || beat.user.name} />
+                        <AvatarFallback>{(beat.user.username || beat.user.name || "U").slice(0, 2).toUpperCase()}</AvatarFallback>
                       </Avatar>
                       <div className="flex-1">
                         <h3 className="font-serif font-bold">{beat.title}</h3>
                         <div className="flex items-center gap-2">
-                          <span className="text-sm text-muted-foreground">by {beat.producer.username}</span>
-                          <Badge className={`${getTierColor(beat.producer.tier)} text-white text-xs`}>
-                            T{beat.producer.tier}
+                          <span className="text-sm text-muted-foreground">by {beat.user.username || beat.user.name}</span>
+                          <Badge className={`${getTierColor(beat.user.tier)} text-white text-xs`}>
+                            T{beat.user.tier}
                           </Badge>
                         </div>
                       </div>
@@ -245,22 +307,26 @@ export function BeatLibrary() {
                       <div className="flex items-center gap-3">
                         <span className="flex items-center gap-1">
                           <Heart className="h-3 w-3" />
-                          {beat.likes}
+                          {beat.likesCount}
                         </span>
                         <span className="flex items-center gap-1">
                           <Download className="h-3 w-3" />
                           {beat.downloads}
                         </span>
                       </div>
-                      <span>{beat.createdAt}</span>
+                      <span>{new Date(beat.createdAt).toLocaleDateString()}</span>
                     </div>
 
                     {/* Actions */}
                     <div className="flex gap-2">
-                      <Button variant="outline" size="sm" className="flex-1 bg-transparent">
-                        <Download className="h-4 w-4 mr-1" />
-                        Download
-                      </Button>
+                      <BeatInteractions
+                        beatId={beat.id}
+                        initialLikesCount={beat.likesCount}
+                        initialDownloadsCount={beat.downloads}
+                        showCounts={false}
+                        size="sm"
+                        beatTitle={beat.title}
+                      />
                       <Button size="sm" className="flex-1 bg-primary hover:bg-primary/90">
                         <Mic className="h-4 w-4 mr-1" />
                         Record Over
@@ -268,29 +334,35 @@ export function BeatLibrary() {
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+                ))
+              )}
             </div>
           </TabsContent>
 
           <TabsContent value="trending" className="space-y-6">
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[...mockBeats]
-                .sort((a, b) => b.likes - a.likes)
+              {loading ? (
+                <div className="col-span-full text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                  <p className="text-muted-foreground mt-2">Loading beats...</p>
+                </div>
+              ) : [...beats]
+                .sort((a, b) => b.likesCount - a.likesCount)
                 .map((beat, index) => (
                   <Card key={beat.id} className="hover:shadow-lg transition-shadow">
                     <CardHeader className="pb-3">
                       <div className="flex items-center gap-3">
                         <div className="text-lg font-bold text-primary">#{index + 1}</div>
                         <Avatar className="h-10 w-10">
-                          <AvatarImage src={beat.producer.avatar || "/placeholder.svg"} alt={beat.producer.username} />
-                          <AvatarFallback>{beat.producer.username.slice(0, 2).toUpperCase()}</AvatarFallback>
+                          <AvatarImage src={beat.user.image || "/placeholder.svg"} alt={beat.user.username || beat.user.name} />
+                          <AvatarFallback>{(beat.user.username || beat.user.name || "U").slice(0, 2).toUpperCase()}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1">
                           <h3 className="font-serif font-bold">{beat.title}</h3>
                           <div className="flex items-center gap-2">
-                            <span className="text-sm text-muted-foreground">by {beat.producer.username}</span>
-                            <Badge className={`${getTierColor(beat.producer.tier)} text-white text-xs`}>
-                              T{beat.producer.tier}
+                            <span className="text-sm text-muted-foreground">by {beat.user.username || beat.user.name}</span>
+                            <Badge className={`${getTierColor(beat.user.tier)} text-white text-xs`}>
+                              T{beat.user.tier}
                             </Badge>
                           </div>
                         </div>
