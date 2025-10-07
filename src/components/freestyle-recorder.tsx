@@ -36,9 +36,19 @@ export function FreestyleRecorder({ challenge, onClose }: FreestyleRecorderProps
   useEffect(() => {
     // Start preparation countdown
     if (phase === "prepare") {
+      // Clear any existing interval first
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+      }
+      
       intervalRef.current = setInterval(() => {
         setPreparationTime((prev) => {
           if (prev <= 1) {
+            // Clear the preparation interval before transitioning
+            if (intervalRef.current) {
+              clearInterval(intervalRef.current)
+              intervalRef.current = null
+            }
             setPhase("record")
             startRecording()
             return 0
@@ -87,6 +97,11 @@ export function FreestyleRecorder({ challenge, onClose }: FreestyleRecorderProps
       setIsRecording(true)
       setRecordingTime(0)
 
+      // Clear any existing interval before starting new one
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+      }
+
       // Start recording timer
       intervalRef.current = setInterval(() => {
         setRecordingTime((prev) => {
@@ -109,6 +124,7 @@ export function FreestyleRecorder({ challenge, onClose }: FreestyleRecorderProps
       setIsRecording(false)
       if (intervalRef.current) {
         clearInterval(intervalRef.current)
+        intervalRef.current = null
       }
     }
   }

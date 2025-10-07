@@ -68,6 +68,8 @@ export function RecordingStudio() {
   const beatAudioRef = useRef<HTMLAudioElement | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
+  const audioContextRef = useRef<AudioContext | null>(null)
+  const destinationRef = useRef<MediaStreamAudioDestinationNode | null>(null)
 
   const MAX_RECORDING_TIME = 60 // 60 seconds
   const MIN_RECORDING_TIME = 20 // 20 seconds
@@ -112,15 +114,60 @@ export function RecordingStudio() {
       if (beatAudioRef.current) {
         beatAudioRef.current.pause()
       }
+      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+        audioContextRef.current.close()
+      }
     }
   }, [])
 
   const startRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      streamRef.current = stream
+      // Create audio context for mixing
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+      audioContextRef.current = audioContext
 
-      const mediaRecorder = new MediaRecorder(stream)
+      // Get microphone stream
+      const micStream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      streamRef.current = micStream
+
+      // Create destination for mixed audio
+      const destination = audioContext.createMediaStreamDestination()
+      destinationRef.current = destination
+
+      // Create microphone source
+      const micSource = audioContext.createMediaStreamSource(micStream)
+      micSource.connect(destination)
+
+      let beatSource: AudioBufferSourceNode | null = null
+
+      // If beat is selected, add it to the mix
+      if (selectedBeat && beatAudioRef.current) {
+        try {
+          // Load and play the beat
+          const response = await fetch(selectedBeat.fileUrl)
+          const arrayBuffer = await response.arrayBuffer()
+          const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
+          
+          beatSource = audioContext.createBufferSource()
+          beatSource.buffer = audioBuffer
+          beatSource.loop = true
+          
+          // Set beat volume
+          const gainNode = audioContext.createGain()
+          gainNode.gain.value = beatVolume
+          beatSource.connect(gainNode)
+          gainNode.connect(destination)
+          
+          beatSource.start()
+          setIsBeatPlaying(true)
+        } catch (beatError) {
+          console.error("Error loading beat:", beatError)
+          // Continue recording without beat if there's an error
+        }
+      }
+
+      // Create media recorder with mixed audio
+      const mediaRecorder = new MediaRecorder(destination.stream)
       mediaRecorderRef.current = mediaRecorder
 
       const chunks: BlobPart[] = []
@@ -135,19 +182,20 @@ export function RecordingStudio() {
         const blob = new Blob(chunks, { type: "audio/webm" })
         setAudioBlob(blob)
         setAudioUrl(URL.createObjectURL(blob))
-        stream.getTracks().forEach((track) => track.stop())
+        
+        // Cleanup
+        micStream.getTracks().forEach((track) => track.stop())
+        if (beatSource) {
+          beatSource.stop()
+        }
+        if (audioContext.state !== 'closed') {
+          audioContext.close()
+        }
       }
 
       mediaRecorder.start()
       setIsRecording(true)
       setRecordingTime(0)
-
-      // Start beat if selected
-      if (selectedBeat && beatAudioRef.current) {
-        beatAudioRef.current.currentTime = 0
-        beatAudioRef.current.play()
-        setIsBeatPlaying(true)
-      }
 
       // Start timer
       intervalRef.current = setInterval(() => {
@@ -173,10 +221,7 @@ export function RecordingStudio() {
         clearInterval(intervalRef.current)
       }
       // Stop beat when recording stops
-      if (beatAudioRef.current) {
-        beatAudioRef.current.pause()
-        setIsBeatPlaying(false)
-      }
+      setIsBeatPlaying(false)
     }
   }
 
@@ -199,30 +244,35 @@ export function RecordingStudio() {
     setAudioUrl(null)
     setRecordingTime(0)
     setIsPlaying(false)
+    setIsBeatPlaying(false)
     setUploadSuccess(false)
     if (audioRef.current) {
       audioRef.current.pause()
       audioRef.current.currentTime = 0
     }
+    if (beatAudioRef.current) {
+      beatAudioRef.current.pause()
+      beatAudioRef.current.currentTime = 0
+    }
   }
 
-  // Beat control functions
+  // Beat control functions (for preview only)
   const playBeat = () => {
-    if (selectedBeat && beatAudioRef.current) {
+    if (selectedBeat && beatAudioRef.current && !isRecording) {
       beatAudioRef.current.play()
       setIsBeatPlaying(true)
     }
   }
 
   const pauseBeat = () => {
-    if (beatAudioRef.current) {
+    if (beatAudioRef.current && !isRecording) {
       beatAudioRef.current.pause()
       setIsBeatPlaying(false)
     }
   }
 
   const stopBeat = () => {
-    if (beatAudioRef.current) {
+    if (beatAudioRef.current && !isRecording) {
       beatAudioRef.current.pause()
       beatAudioRef.current.currentTime = 0
       setIsBeatPlaying(false)
