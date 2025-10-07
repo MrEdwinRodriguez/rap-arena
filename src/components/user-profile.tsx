@@ -6,7 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Mic, Trophy, Users, Heart, MessageCircle, Play, Pause, Calendar, Music } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Mic, Trophy, Users, Heart, MessageCircle, Play, Pause, Calendar, Music, MoreVertical } from "lucide-react"
 import RecordingInteractions from "@/components/recording-interactions"
 import { FollowButton } from "@/components/follow-button"
 import { UserPosts } from "@/components/user-posts"
@@ -74,6 +76,7 @@ export function UserProfile({ user, recordings }: UserProfileProps) {
   const [audioElements, setAudioElements] = useState<{ [key: string]: HTMLAudioElement }>({})
   const [followersCount, setFollowersCount] = useState(user.followersCount || 0)
   const [followingCount, setFollowingCount] = useState(user.followingCount || 0)
+  const [showFavoritesModal, setShowFavoritesModal] = useState(false)
   
   const isOwnProfile = session?.user?.id === user.id
 
@@ -167,7 +170,30 @@ export function UserProfile({ user, recordings }: UserProfileProps) {
     <div className="space-y-8">
       {/* User Profile Header */}
       <Card className="max-w-4xl mx-auto">
-        <CardHeader className="text-center">
+        <CardHeader className="text-center relative">
+          {/* Dropdown Menu for Own Profile - Top Right Corner */}
+          {isOwnProfile && (
+            <div className="absolute top-4 right-4">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    className="h-8 w-8 rounded-full hover:bg-accent"
+                  >
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setShowFavoritesModal(true)}>
+                    <Heart className="mr-2 h-4 w-4" />
+                    View Favorites
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )}
+          
           <div className="flex flex-col items-center gap-4">
             <Avatar className="w-24 h-24">
               <AvatarImage src={user.image || "/placeholder.svg"} alt={displayName} />
@@ -292,22 +318,16 @@ export function UserProfile({ user, recordings }: UserProfileProps) {
           />
         </div>
 
-        {/* Right Column - Recordings & Favorites (only own profile) */}
+        {/* Right Column - Recordings */}
         <div className="space-y-6">
           {isOwnProfile ? (
-            <Tabs defaultValue="recordings" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="recordings" className="gap-2">
-                  <Music className="h-4 w-4" />
-                  Recordings ({recordings.length})
-                </TabsTrigger>
-                <TabsTrigger value="favorites" className="gap-2">
-                  <Heart className="h-4 w-4" />
-                  Favorites
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="recordings" className="space-y-4 mt-6">
+            <div className="w-full">
+              <div className="flex items-center gap-2 mb-6">
+                <Music className="h-5 w-5" />
+                <h2 className="text-xl font-semibold">Public Recordings ({recordings.length})</h2>
+              </div>
+              
+              <div className="space-y-4">
 
           {recordings.length === 0 ? (
             <Card>
@@ -396,12 +416,8 @@ export function UserProfile({ user, recordings }: UserProfileProps) {
               ))}
             </div>
           )}
-              </TabsContent>
-
-              <TabsContent value="favorites" className="mt-6">
-                <UserFavorites userId={user.id} />
-              </TabsContent>
-            </Tabs>
+              </div>
+            </div>
           ) : (
             <>
               <div className="flex items-center justify-between mb-6">
@@ -503,6 +519,21 @@ export function UserProfile({ user, recordings }: UserProfileProps) {
           )}
         </div>
       </div>
+
+      {/* Favorites Modal */}
+      <Dialog open={showFavoritesModal} onOpenChange={setShowFavoritesModal}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Heart className="h-5 w-5 text-primary" />
+              My Favorites
+            </DialogTitle>
+          </DialogHeader>
+          <div className="mt-4">
+            <UserFavorites userId={user.id} />
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
