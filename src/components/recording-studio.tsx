@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Mic, Square, Play, Pause, RotateCcw, Save, Trash2, Upload, Music, Volume2, VolumeX } from "lucide-react"
+import { mixVoiceWithBeat } from "@/lib/audio-mixing"
 
 // Create context for refreshing recordings
 const RecordingRefreshContext = createContext<(() => void) | null>(null)
@@ -46,6 +47,7 @@ export function RecordingStudio() {
   const [recordingTime, setRecordingTime] = useState(0)
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null)
   const [audioUrl, setAudioUrl] = useState<string | null>(null)
+  const [audioMimeType, setAudioMimeType] = useState<string>('')
   const [hasPermission, setHasPermission] = useState<boolean | null>(null)
   const [showSaveDialog, setShowSaveDialog] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
@@ -70,6 +72,9 @@ export function RecordingStudio() {
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
   const destinationRef = useRef<MediaStreamAudioDestinationNode | null>(null)
+  const beatBufferRef = useRef<AudioBuffer | null>(null)
+  const voiceBlobRef = useRef<Blob | null>(null)
+  const beatSourceRef = useRef<AudioBufferSourceNode | null>(null)
 
   const MAX_RECORDING_TIME = 60 // 60 seconds
   const MIN_RECORDING_TIME = 20 // 20 seconds
@@ -122,52 +127,15 @@ export function RecordingStudio() {
 
   const startRecording = async () => {
     try {
-      // Create audio context for mixing
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
-      audioContextRef.current = audioContext
-
       // Get microphone stream
       const micStream = await navigator.mediaDevices.getUserMedia({ audio: true })
       streamRef.current = micStream
 
-      // Create destination for mixed audio
-      const destination = audioContext.createMediaStreamDestination()
-      destinationRef.current = destination
-
-      // Create microphone source
-      const micSource = audioContext.createMediaStreamSource(micStream)
-      micSource.connect(destination)
-
-      let beatSource: AudioBufferSourceNode | null = null
-
-      // If beat is selected, add it to the mix
-      if (selectedBeat && beatAudioRef.current) {
-        try {
-          // Load and play the beat
-          const response = await fetch(selectedBeat.fileUrl)
-          const arrayBuffer = await response.arrayBuffer()
-          const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
-          
-          beatSource = audioContext.createBufferSource()
-          beatSource.buffer = audioBuffer
-          beatSource.loop = true
-          
-          // Set beat volume
-          const gainNode = audioContext.createGain()
-          gainNode.gain.value = beatVolume
-          beatSource.connect(gainNode)
-          gainNode.connect(destination)
-          
-          beatSource.start()
-          setIsBeatPlaying(true)
-        } catch (beatError) {
-          console.error("Error loading beat:", beatError)
-          // Continue recording without beat if there's an error
-        }
-      }
-
-      // Create media recorder with mixed audio
-      const mediaRecorder = new MediaRecorder(destination.stream)
+      // Record voice only (high quality, not mixed yet)
+      const mediaRecorder = new MediaRecorder(micStream, {
+        mimeType: 'audio/webm;codecs=opus',
+        audioBitsPerSecond: 128000
+      })
       mediaRecorderRef.current = mediaRecorder
 
       const chunks: BlobPart[] = []
@@ -178,24 +146,100 @@ export function RecordingStudio() {
         }
       }
 
-      mediaRecorder.onstop = () => {
-        const blob = new Blob(chunks, { type: "audio/webm" })
-        setAudioBlob(blob)
-        setAudioUrl(URL.createObjectURL(blob))
+      mediaRecorder.onstop = async () => {
+        const voiceBlob = new Blob(chunks, { type: "audio/webm" })
+        voiceBlobRef.current = voiceBlob
         
-        // Cleanup
+        // Stop mic stream
         micStream.getTracks().forEach((track) => track.stop())
-        if (beatSource) {
-          beatSource.stop()
+        
+        // If beat was selected, mix voice with beat
+        if (selectedBeat && beatBufferRef.current) {
+          try {
+            console.log('Mixing voice with beat...')
+            const mixedBlob = await mixVoiceWithBeat(
+              voiceBlob,
+              beatBufferRef.current,
+              recordingTime,
+              beatVolume
+            )
+            console.log('Mixing completed successfully. Blob type:', mixedBlob.type, 'Size:', mixedBlob.size)
+            setAudioBlob(mixedBlob)
+            setAudioMimeType(mixedBlob.type)
+            const url = URL.createObjectURL(mixedBlob)
+            setAudioUrl(url)
+            
+            // Force audio element to reload with new source
+            setTimeout(() => {
+              if (audioRef.current) {
+                audioRef.current.load()
+                console.log('Audio element reloaded after mixing')
+              }
+            }, 100)
+          } catch (mixError) {
+            console.error('Error mixing audio:', mixError)
+            // Fallback to voice only if mixing fails
+            console.log('Fallback to voice only. Blob type:', voiceBlob.type, 'Size:', voiceBlob.size)
+            setAudioBlob(voiceBlob)
+            setAudioMimeType(voiceBlob.type)
+            setAudioUrl(URL.createObjectURL(voiceBlob))
+          }
+        } else {
+          // No beat selected, use voice only
+          console.log('No beat selected, using voice only. Blob type:', voiceBlob.type, 'Size:', voiceBlob.size)
+          setAudioBlob(voiceBlob)
+          setAudioMimeType(voiceBlob.type)
+          const url = URL.createObjectURL(voiceBlob)
+          setAudioUrl(url)
+          
+          // Force audio element to reload
+          setTimeout(() => {
+            if (audioRef.current) {
+              audioRef.current.load()
+            }
+          }, 100)
         }
-        if (audioContext.state !== 'closed') {
-          audioContext.close()
+        
+        // Stop beat playback
+        if (beatSourceRef.current) {
+          try {
+            beatSourceRef.current.stop()
+          } catch (e) {
+            // Already stopped
+          }
+        }
+        if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+          audioContextRef.current.close()
         }
       }
 
       mediaRecorder.start()
       setIsRecording(true)
       setRecordingTime(0)
+
+      // If beat is selected, play it in the background for the user to hear
+      if (selectedBeat && beatBufferRef.current) {
+        try {
+          const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+          audioContextRef.current = audioContext
+          
+          const beatSource = audioContext.createBufferSource()
+          beatSource.buffer = beatBufferRef.current
+          beatSource.loop = true
+          
+          // Set beat volume for playback
+          const gainNode = audioContext.createGain()
+          gainNode.gain.value = beatVolume
+          beatSource.connect(gainNode)
+          gainNode.connect(audioContext.destination)
+          
+          beatSource.start()
+          beatSourceRef.current = beatSource
+          setIsBeatPlaying(true)
+        } catch (beatError) {
+          console.error("Error playing beat:", beatError)
+        }
+      }
 
       // Start timer
       intervalRef.current = setInterval(() => {
@@ -227,7 +271,13 @@ export function RecordingStudio() {
 
   const playRecording = () => {
     if (audioUrl && audioRef.current) {
-      audioRef.current.play()
+      // Load the audio if not already loaded
+      if (audioRef.current.readyState === 0) {
+        audioRef.current.load()
+      }
+      audioRef.current.play().catch(err => {
+        console.error('Error playing recording:', err)
+      })
       setIsPlaying(true)
     }
   }
@@ -242,6 +292,7 @@ export function RecordingStudio() {
   const resetRecording = () => {
     setAudioBlob(null)
     setAudioUrl(null)
+    setAudioMimeType('')
     setRecordingTime(0)
     setIsPlaying(false)
     setIsBeatPlaying(false)
@@ -293,14 +344,28 @@ export function RecordingStudio() {
     }
   }
 
-  const handleBeatSelect = (beatId: string) => {
+  const handleBeatSelect = async (beatId: string) => {
     const beat = beats.find(b => b.id === beatId)
     if (beat) {
       setSelectedBeat(beat)
       // Stop current beat if playing
       stopBeat()
+      
+      // Preload the beat audio buffer for mixing later
+      try {
+        const response = await fetch(beat.fileUrl)
+        const arrayBuffer = await response.arrayBuffer()
+        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
+        beatBufferRef.current = audioBuffer
+        audioContext.close()
+        console.log('Beat preloaded successfully')
+      } catch (error) {
+        console.error('Error preloading beat:', error)
+      }
     } else {
       setSelectedBeat(null)
+      beatBufferRef.current = null
       stopBeat()
     }
   }
@@ -594,10 +659,28 @@ export function RecordingStudio() {
           {audioUrl && (
             <audio
               ref={audioRef}
-              src={audioUrl}
               onEnded={() => setIsPlaying(false)}
+              onError={(e) => {
+                console.error('Audio playback error:', e)
+                if (audioRef.current) {
+                  console.error('Audio element error details:', {
+                    error: audioRef.current.error,
+                    readyState: audioRef.current.readyState,
+                    networkState: audioRef.current.networkState,
+                    duration: audioRef.current.duration,
+                    currentTime: audioRef.current.currentTime
+                  })
+                }
+              }}
+              onLoadedMetadata={() => {
+                if (audioRef.current) {
+                  console.log('Audio loaded. Duration:', audioRef.current.duration, 's')
+                }
+              }}
               className="hidden"
-            />
+            >
+              <source src={audioUrl} type={audioMimeType || 'audio/wav'} />
+            </audio>
           )}
           
           {selectedBeat && (
