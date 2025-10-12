@@ -4,7 +4,10 @@ export async function mixVoiceWithBeat(
   voiceBlob: Blob,
   beatBuffer: AudioBuffer,
   duration: number,
-  beatVolume: number
+  beatVolume: number,
+  voiceGainMultiplier: number = 1.2,
+  bassGainDb: number = 0,
+  trebleGainDb: number = 0
 ): Promise<Blob> {
   // Create audio context for mixing
   const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
@@ -54,8 +57,12 @@ export async function mixVoiceWithBeat(
   console.log('- Beat left length:', beatLeft.length)
   console.log('- Beat right length:', beatRight.length)
   
+  // Convert dB to linear gain
+  const bassGainLinear = Math.pow(10, bassGainDb / 20)
+  const trebleGainLinear = Math.pow(10, trebleGainDb / 20)
+  
   // Mix audio: voice + beat with volume control
-  const voiceGain = 1.2 // Slightly boost voice for clarity
+  const voiceGain = voiceGainMultiplier
   const beatGain = beatVolume * 0.8 // Reduce beat volume slightly to keep voice prominent
   
   for (let i = 0; i < mixSamples; i++) {
@@ -75,8 +82,15 @@ export async function mixVoiceWithBeat(
   
   console.log('Mixing loop completed. Processed', mixSamples, 'samples')
   
+  // Apply EQ if bass or treble adjustments are needed
+  let finalBuffer = outputBuffer
+  if (bassGainDb !== 0 || trebleGainDb !== 0) {
+    console.log('Applying EQ: Bass', bassGainDb, 'dB, Treble', trebleGainDb, 'dB')
+    finalBuffer = await applyEQ(audioContext, outputBuffer, bassGainLinear, trebleGainLinear)
+  }
+  
   // Convert to WAV blob (properly formatted for browser playback)
-  const wavBlob = audioBufferToWav(outputBuffer)
+  const wavBlob = audioBufferToWav(finalBuffer)
   
   console.log('WAV blob created:')
   console.log('- Size:', wavBlob.size, 'bytes')
@@ -150,6 +164,48 @@ function audioBufferToWav(buffer: AudioBuffer): Blob {
   }
 
   return new Blob([arrayBuffer], { type: 'audio/wav' })
+}
+
+// Apply EQ (bass and treble) to an audio buffer
+async function applyEQ(
+  audioContext: AudioContext,
+  buffer: AudioBuffer,
+  bassGain: number,
+  trebleGain: number
+): Promise<AudioBuffer> {
+  // Use OfflineAudioContext to process the audio
+  const offlineContext = new OfflineAudioContext(
+    buffer.numberOfChannels,
+    buffer.length,
+    buffer.sampleRate
+  )
+  
+  // Create source
+  const source = offlineContext.createBufferSource()
+  source.buffer = buffer
+  
+  // Create bass filter (low shelf)
+  const bassFilter = offlineContext.createBiquadFilter()
+  bassFilter.type = 'lowshelf'
+  bassFilter.frequency.value = 200 // Bass frequencies below 200Hz
+  bassFilter.gain.value = (bassGain - 1) * 12 // Convert linear gain to dB adjustment
+  
+  // Create treble filter (high shelf)
+  const trebleFilter = offlineContext.createBiquadFilter()
+  trebleFilter.type = 'highshelf'
+  trebleFilter.frequency.value = 3000 // Treble frequencies above 3kHz
+  trebleFilter.gain.value = (trebleGain - 1) * 12 // Convert linear gain to dB adjustment
+  
+  // Connect the chain
+  source.connect(bassFilter)
+  bassFilter.connect(trebleFilter)
+  trebleFilter.connect(offlineContext.destination)
+  
+  // Process
+  source.start()
+  const renderedBuffer = await offlineContext.startRendering()
+  
+  return renderedBuffer
 }
 
 // Soft limiter to prevent harsh clipping

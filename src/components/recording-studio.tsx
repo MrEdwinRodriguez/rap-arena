@@ -61,6 +61,11 @@ export function RecordingStudio() {
   const [isBeatMuted, setIsBeatMuted] = useState(false)
   const [loadingBeats, setLoadingBeats] = useState(true)
   
+  // Audio control state (for mixing)
+  const [voiceGain, setVoiceGain] = useState(1.2) // Voice volume multiplier
+  const [bassGain, setBassGain] = useState(0) // Bass boost/cut in dB (-12 to +12)
+  const [trebleGain, setTrebleGain] = useState(0) // Treble boost/cut in dB (-12 to +12)
+  
   // Form fields for saving
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
@@ -161,7 +166,10 @@ export function RecordingStudio() {
               voiceBlob,
               beatBufferRef.current,
               recordingTime,
-              beatVolume
+              beatVolume,
+              voiceGain,
+              bassGain,
+              trebleGain
             )
             console.log('Mixing completed successfully. Blob type:', mixedBlob.type, 'Size:', mixedBlob.size)
             setAudioBlob(mixedBlob)
@@ -581,6 +589,89 @@ export function RecordingStudio() {
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+
+          {/* Audio Controls */}
+          <div className="space-y-4 border-t pt-4">
+            <h3 className="text-lg font-medium">Audio Controls</h3>
+            
+            <div className="space-y-4">
+              {/* Voice Gain */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium">Voice Volume</Label>
+                  <span className="text-sm text-muted-foreground">{voiceGain.toFixed(1)}x</span>
+                </div>
+                <input
+                  type="range"
+                  min="0.5"
+                  max="2.0"
+                  step="0.1"
+                  value={voiceGain}
+                  onChange={(e) => setVoiceGain(parseFloat(e.target.value))}
+                  className="w-full"
+                  disabled={isRecording}
+                />
+                <p className="text-xs text-muted-foreground">Adjust the volume of your voice in the mix</p>
+              </div>
+
+              {/* Bass Control */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium">Bass</Label>
+                  <span className="text-sm text-muted-foreground">
+                    {bassGain > 0 ? '+' : ''}{bassGain} dB
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="-12"
+                  max="12"
+                  step="1"
+                  value={bassGain}
+                  onChange={(e) => setBassGain(parseInt(e.target.value))}
+                  className="w-full"
+                  disabled={isRecording}
+                />
+                <p className="text-xs text-muted-foreground">Boost or cut low frequencies (below 200Hz)</p>
+              </div>
+
+              {/* Treble Control */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium">Treble</Label>
+                  <span className="text-sm text-muted-foreground">
+                    {trebleGain > 0 ? '+' : ''}{trebleGain} dB
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="-12"
+                  max="12"
+                  step="1"
+                  value={trebleGain}
+                  onChange={(e) => setTrebleGain(parseInt(e.target.value))}
+                  className="w-full"
+                  disabled={isRecording}
+                />
+                <p className="text-xs text-muted-foreground">Boost or cut high frequencies (above 3kHz)</p>
+              </div>
+
+              {/* Reset Button */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setVoiceGain(1.2)
+                  setBassGain(0)
+                  setTrebleGain(0)
+                }}
+                disabled={isRecording}
+                className="w-full"
+              >
+                Reset Audio Controls
+              </Button>
             </div>
           </div>
 
