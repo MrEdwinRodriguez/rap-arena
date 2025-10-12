@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { BeatUploader } from "@/components/beat-uploader"
 import { BeatPlayer } from "@/components/beat-player"
-import { BeatInteractions } from "@/components/beat-interactions"
+import BeatInteractions from "@/components/beat-interactions"
 import { Music, Upload, TrendingUp, Filter, Heart, Download, Mic } from "lucide-react"
 
 interface Beat {

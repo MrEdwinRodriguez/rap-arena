@@ -9,13 +9,24 @@ interface Beat {
   title: string
   duration: number
   audioUrl: string
-  waveformData: number[]
+  waveformData?: number[]
 }
 
 interface BeatPlayerProps {
   beat: Beat
   isPlaying: boolean
   onPlayToggle: () => void
+}
+
+// Generate a default waveform pattern
+function generateDefaultWaveform(): number[] {
+  // Create a varied waveform pattern
+  return Array.from({ length: 40 }, (_, i) => {
+    // Create a wave-like pattern with some randomness
+    const wave = Math.sin(i / 5) * 0.3 + 0.5
+    const random = Math.random() * 0.3
+    return Math.min(0.95, Math.max(0.2, wave + random))
+  })
 }
 
 export function BeatPlayer({ beat, isPlaying, onPlayToggle }: BeatPlayerProps) {
@@ -54,7 +65,7 @@ export function BeatPlayer({ beat, isPlaying, onPlayToggle }: BeatPlayerProps) {
 
       {/* Simple waveform visualization */}
       <div className="flex items-end gap-1 h-6">
-        {beat.waveformData.map((height, index) => (
+        {(beat.waveformData || generateDefaultWaveform()).map((height, index) => (
           <div
             key={index}
             className={`rounded-sm flex-1 transition-colors ${isPlaying ? "bg-primary" : "bg-primary/40"}`}
